@@ -19,45 +19,32 @@ paths:
         description: User details
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: Maria
-                  pattern: 'ˆ.*?$'
-                  minLength: 3
-                  maxLength: 16
+            schema: { $ref: "#/components/schemas/Username" }
       required: true
     responses:
       '201':
         description: User log-in action successful
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                  example: "abcdef012345"
+            schema: { $ref: "#/components/schemas/UserID" }
+      '400': { $ref: "#/components/responses/BadRequest" }
+      '500': { $ref: "#/components/responses/InternalServerError" }
+
   /users:
-      get:
-        tags: ["User"]
-        summary: Get list of users
-        operationId: getUsers
-        responses:
-          '200':
-            description: List of registered users
-            content:
-              application/json:
-                schema:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      username:
-                        type: string
-                        example: "Maria"
+    get:
+      tags: ["User"]
+      summary: Get list of users
+      operationId: getUsers
+      responses:
+        '200':
+          description: List of registered users
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsersList" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/me:
     patch:
@@ -68,12 +55,7 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                  example: "MariaNew"
+            schema: { $ref: "#/components/schemas/Username" }
       responses:
         '200':
           description: Username updated successfully
@@ -292,6 +274,46 @@ paths:
 
 components:
   schemas:
+    Username: #Rappresenta l'username dell'utente
+    description: A user's nickname
+    type: object
+    properties:
+      name:
+        description: Any string between 3 and 16 chars
+        type: string 
+        example: "Maria"
+        pattern: '^.*?$'
+        minLength: 3 
+        maxLength: 16
+
+    UserID: #Rappresenta l'identificativo dell'utente
+      description: A user's id
+      type: string
+      example: "abcdef012345"
+
+    User:
+      description: Represent a user
+      type: object
+      properties:
+        user_id: { $ref: "#/components/schemas/UserID" }
+        username: { $ref: "#/components/schemas/Username" }
+
+    UserList:
+      title: Users List
+      description: |-
+        A list of users for many responses.
+        It's used to get a list of users for the search, follower and followings lists, banned users list and likes list.
+      type: array
+      items:
+        type: object
+        description: User
+        properties:
+          user: { $ref: "#/components/schemas/User" }
+      minItems: 0
+      maxItems: 100
+
+    Photo:
+    
     StatusInfo:
       title: Status Info
       type: object
@@ -306,11 +328,23 @@ components:
         title: { type: string }
         message: { type: string }
         url: { type: string }
+    
 
   responses:
-    Unauthorized:
+    responses:
+    Unauthorized: #401
       description: The access token is missing or it's expired
-    BadRequest:
+
+    BadRequest: #400
       description: The request was not compliant with the documentation (eg. missing fields, etc)
-    InternalServerError:
+    
+    Forbidden: #403
+      description: The user is not allowed to perform the action.
+
+    InternalServerError: #500
       description: The server encountered an internal error. Further info in server logs
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
