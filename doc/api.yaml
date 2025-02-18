@@ -290,3 +290,27 @@ paths:
         '200':
           description: Group photo updated successfully
 
+components:
+  schemas:
+    StatusInfo:
+      title: Status Info
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - info
+            - warning
+            - critical
+            - ""
+        title: { type: string }
+        message: { type: string }
+        url: { type: string }
+
+  responses:
+    Unauthorized:
+      description: The access token is missing or it's expired
+    BadRequest:
+      description: The request was not compliant with the documentation (eg. missing fields, etc)
+    InternalServerError:
+      description: The server encountered an internal error. Further info in server logs
