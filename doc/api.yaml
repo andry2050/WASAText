@@ -20,15 +20,15 @@ paths:
         content:
           application/json:
             schema: { $ref: "#/components/schemas/Username" }
-      required: true
-    responses:
-      '201':
-        description: User log-in action successful
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/UserID" }
-      '400': { $ref: "#/components/responses/BadRequest" }
-      '500': { $ref: "#/components/responses/InternalServerError" }
+        required: true
+      responses:
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserID" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users:
     get:
@@ -59,6 +59,8 @@ paths:
       responses:
         '200':
           description: Username updated successfully
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
   
   /users/me/photo:
     patch:
@@ -69,13 +71,8 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                photoUrl:
-                  type: string
-                  format: uri
-                  example: "https://example.com/photo.jpg"
+            schema: { $ref: "#/components/schemas/Photo" }
+              
       responses:
         '200':
           description: Profile photo updated successfully
@@ -166,6 +163,19 @@ paths:
       responses:
         '201':
           description: Comment added successfully
+    delete:
+      tags: ["Messages"]
+      summary: Remove a comment from a message
+      operationId: uncommentMessage
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comment removed successfully
 
   /messages/{messageId}:
     delete:
@@ -181,20 +191,6 @@ paths:
       responses:
         '200':
           description: Message deleted successfully
-
-    delete:
-      tags: ["Messages"]
-      summary: Remove a comment from a message
-      operationId: uncommentMessage
-      parameters:
-        - name: messageId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Comment removed successfully
 
   /groups:
     post:
@@ -275,21 +271,21 @@ paths:
 components:
   schemas:
     Username: #Rappresenta l'username dell'utente
-    description: A user's nickname
-    type: object
-    properties:
-      name:
-        description: Any string between 3 and 16 chars
-        type: string 
-        example: "Maria"
-        pattern: '^.*?$'
-        minLength: 3 
-        maxLength: 16
+      description: A user's nickname
+      type: object
+      properties:
+        name:
+          description: Any string between 3 and 16 chars
+          type: string 
+          example: "Maria"
+          pattern: '^.*?$'
+          minLength: 3 
+          maxLength: 16
 
     UserID: #Rappresenta l'identificativo dell'utente
       description: A user's id
-      type: string
-      example: "abcdef012345"
+      type: integer
+      example: 123456
 
     User:
       description: Represent a user
@@ -298,7 +294,7 @@ components:
         user_id: { $ref: "#/components/schemas/UserID" }
         username: { $ref: "#/components/schemas/Username" }
 
-    UserList:
+    UsersList:
       title: Users List
       description: |-
         A list of users for many responses.
@@ -312,7 +308,14 @@ components:
       minItems: 0
       maxItems: 100
 
-    Photo:
+    Photo: 
+      description: Represent a photo
+      type: object
+      properties:
+        photoUrl:
+          type: string
+          format: uri
+          example: "https://example.com/photo.jpg"
     
     StatusInfo:
       title: Status Info
@@ -331,7 +334,6 @@ components:
     
 
   responses:
-    responses:
     Unauthorized: #401
       description: The access token is missing or it's expired
 
