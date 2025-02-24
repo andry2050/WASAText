@@ -1,0 +1,363 @@
+openapi: 3.0.3
+servers:
+  - url: "http://localhost:3000"
+info:
+  title: WASAText
+  description: WASAText project
+  version: 1.0.0
+paths:
+  /session:
+    post:
+      tags: ["Login"]
+      summary: Logs in the user
+      description: |-
+        If the user does not exist, it will be created,
+        and an identifier is returned.
+        If the user exists, the user identifier is returned.
+      operationId: doLogin
+      requestBody:
+        description: User details
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Username" }
+        required: true
+      responses:
+        '201':
+          description: User log-in action successful
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserID" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
+
+  /users:
+    get:
+      tags: ["User"]
+      summary: Get list of users
+      operationId: getUsers
+      responses:
+        '200':
+          description: List of registered users
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsersList" }
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
+
+  /users/me:
+    patch:
+      tags: ["User"]
+      summary: Set my username
+      operationId: setMyUserName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Username" }
+      responses:
+        '200':
+          description: Username updated successfully
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
+  
+  /users/me/photo:
+    patch:
+      tags: ["User"]
+      summary: Set my profile photo
+      operationId: setMyPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Photo" }              
+      responses:
+        '200':
+          description: Profile photo updated successfully
+
+  /conversations:
+    get:
+      tags: ["Conversations"]
+      summary: Get user's conversations
+      operationId: getMyConversations
+      responses:
+        '200':
+          description: List of conversations
+
+  /conversations/{conversationId}:
+    get:
+      tags: ["Conversations"]
+      summary: Get a conversation by ID
+      operationId: getConversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation details
+  
+  /messages:
+    post:
+      tags: ["Messages"]
+      summary: Send a new message
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Messages" }
+              
+      responses:
+        '201':
+          description: Message sent successfully
+
+  /messages/{messageId}/forward:
+    post:
+      tags: ["messages"]
+      summary: Forward a message
+      operationId: forwardMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newConversationId:
+                  type: string
+                  example: "conv456"
+      responses:
+        '200':
+          description: Message forwarded successfully
+
+  /messages/{messageId}/comment:
+    post:
+      tags: ["Messages"]
+      summary: Comment on a message
+      operationId: commentMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+                  example: "Nice one!"
+      responses:
+        '201':
+          description: Comment added successfully
+    delete:
+      tags: ["Messages"]
+      summary: Remove a comment from a message
+      operationId: uncommentMessage
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Comment removed successfully
+
+  /messages/{messageId}:
+    delete:
+      tags: ["Messages"]
+      summary: Delete a message
+      operationId: deleteMessage
+      parameters:
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Message deleted successfully
+
+  /groups:
+    post:
+      tags: ["groups"]
+      summary: Add user to group
+      operationId: addToGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref:"#/components/schemas/User"}
+      responses:
+        '200':
+          description: User added to group successfully
+
+  /groups/{groupId}:
+    delete:
+      tags: ["groups"]
+      summary: Leave a group
+      operationId: leaveGroup
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully left the group
+
+  /groups/{groupId}/name:
+    patch:
+      tags: ["groups"]
+      summary: Set group name
+      operationId: setGroupName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groupName: {$ref:"#/components/schemas/GroupName"}
+      responses:
+        '200':
+          description: Group name updated successfully
+
+  /groups/{groupId}/photo:
+    patch:
+      tags: ["groups"]
+      summary: Set group photo
+      operationId: setGroupPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Photo" }
+      responses:
+        '200':
+          description: Group photo updated successfully
+
+components:
+  schemas:
+    Username: #Rappresenta l'username dell'utente
+      description: A user's nickname
+      type: object
+      properties:
+        name:
+          description: Any string between 3 and 16 chars
+          type: string 
+          example: "Maria"
+          pattern: '^.*?$'
+          minLength: 3 
+          maxLength: 16
+
+    UserID: #Rappresenta l'identificativo dell'utente
+      description: A user's id
+      type: integer
+      example: 123456
+
+    User:
+      description: Represent a user
+      type: object
+      properties:
+        userId: { $ref: "#/components/schemas/UserID" }
+        username: { $ref: "#/components/schemas/Username" }
+
+    UsersList:
+      title: Users List
+      description: |-
+        A list of users for many responses.
+        It's used to get a list of users for the search, follower and followings lists, banned users list and likes list.
+      type: array
+      items:
+        type: object
+        description: User
+        properties:
+          user: { $ref: "#/components/schemas/User" }
+      minItems: 0
+      maxItems: 100
+      
+    GroupName:
+      description: A group name
+      type: string
+      properties:
+        name:
+          description: Any string between 1 and 16
+          type: string
+          example: "WasaGroup 24/25"
+          pattern: '^.*?$'
+          minLength: 1
+          maxLength: 16
+
+    GroupsID: 
+      description: A group's id
+      type: integer
+      example: 123456
+
+    Group:
+      description: Represent a group
+      type: object
+      properties:
+        groupId: { $ref:"#/components/schemas/GroupID"}
+        groupName: { $ref:"#/components/schemas/GroupName"}
+        userId: { $ref:"#/components/schemas/UserID"}
+
+    Photo: 
+      description: Represent a photo
+      type: object
+      properties:
+        photoUrl:
+          type: string
+          format: uri
+          example: "https://example.com/photo.jpg"
+
+    Messages:
+      type: object
+      properties:
+        conversationId:
+          type: string
+          example: "conv123"
+        sender:
+          type: string
+          example: "Maria"
+        content:
+          type: string
+          example: "Ciao!"
+
+    StatusInfo:
+      title: Status Info
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - info
+            - warning
+            - critical
+            - ""
+        title: { type: string }
+        message: { type: string }
+        url: { type: string }
+    
+
+  responses:
+    Unauthorized: #401
+      description: The access token is missing or it's expired
+
+    BadRequest: #400
+      description: The request was not compliant with the documentation (eg. missing fields, etc)
+    
+    Forbidden: #403
+      description: The user is not allowed to perform the action.
+
+    InternalServerError: #500
+      description: The server encountered an internal error. Further info in server logs
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
