@@ -138,7 +138,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/messages/{messageId}/forward:
+  /users/{userId}/messages/{MessageId}/forward:
     post:
       tags: ["messages"]
       summary: Forward a message
@@ -159,7 +159,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/messages/{messageId}/comment:
+  /users/{userId}/messages/{MessageId}/comment:
     post:
       tags: ["Messages"]
       summary: Comment on a message
@@ -180,7 +180,7 @@ paths:
       summary: Remove a comment from a message
       operationId: uncommentMessage
       parameters:
-        - name: messageId
+        - name: MessageId
           in: path
           required: true
           schema:
@@ -197,7 +197,7 @@ paths:
       summary: Delete a message
       operationId: deleteMessage
       parameters:
-        - name: messageId
+        - name: MessageId
           in: path
           required: true
           schema:
