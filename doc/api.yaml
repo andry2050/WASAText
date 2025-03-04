@@ -31,10 +31,20 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users:
+    parameters:
+      - name: search
+        in: query
+        description: The username (or a part of it) to search.
+        schema: { $ref: "#/components/schemas/Username" }
+        required: true
+
     get:
       tags: ["User"]
-      summary: Get list of users
-      operationId: getUsers
+      operationId: searchUsers
+      summary: Get the list of users
+      description: |-
+        Get the list of Users that match with the username specified in the query.
+      
       responses:
         '200':
           description: List of registered users
@@ -45,8 +55,11 @@ paths:
         '401': { $ref: "#/components/responses/Unauthorized" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
-  /users/me:
+  /users/{userId}:
     patch:
       tags: ["User"]
       summary: Set my username
@@ -57,12 +70,13 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/Username" }
       responses:
-        '200':
-          description: Username updated successfully
+        '204': { description: Username updated successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
   
-  /users/me/photo:
+  /users/{userId}/photo:
     patch:
       tags: ["User"]
       summary: Set my profile photo
@@ -73,12 +87,12 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/Photo" }              
       responses:
-        '200':
-          description: Profile photo updated successfully
+        '204': { description: Profile photo updated successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
+        '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /conversations:
+  /users/{userId}/conversations:
     get:
       tags: ["Conversations"]
       summary: Get user's conversations
@@ -87,9 +101,11 @@ paths:
         '200':
           description: List of conversations
         '400': { $ref: "#/components/responses/BadRequest" }
+        '401': { $ref: "#/components/responses/Unauthorized" }
+        '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /conversations/{conversationId}:
+  /users/{userId}/conversations/{ConversationId}:
     get:
       tags: ["Conversations"]
       summary: Get a conversation by ID
@@ -106,7 +122,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
   
-  /messages:
+  /users/{userId}/messages:
     post:
       tags: ["Messages"]
       summary: Send a new message
@@ -115,14 +131,14 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Messages" }
+            schema: { $ref: "#/components/schemas/Message" }
       responses:
         '201':
           description: Message sent successfully
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /messages/{messageId}/forward:
+  /users/{userId}/messages/{messageId}/forward:
     post:
       tags: ["messages"]
       summary: Forward a message
@@ -143,7 +159,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /messages/{messageId}/comment:
+  /users/{userId}/messages/{messageId}/comment:
     post:
       tags: ["Messages"]
       summary: Comment on a message
@@ -152,12 +168,7 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              properties:
-                comment:
-                  type: string
-                  example: "Nice one!"
+            schema: { $ref: "#/components/schemas/Comment" }
       responses:
         '201':
           description: Comment added successfully
@@ -180,7 +191,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /messages/{messageId}:
+  /users/{userId}/messages/{MessageId}:
     delete:
       tags: ["Messages"]
       summary: Delete a message
@@ -197,7 +208,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /groups:
+  /users/{userId}/groups:
     post:
       tags: ["groups"]
       summary: Add user to group
@@ -206,14 +217,14 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref:"#/components/schemas/User"}
+            schema: { $ref: "#/components/schemas/User" }
       responses:
         '200':
           description: User added to group successfully
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /groups/{groupId}:
+  /users/{userId}/groups/{groupId}:
     delete:
       tags: ["groups"]
       summary: Leave a group
@@ -230,7 +241,7 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /groups/{groupId}/name:
+  /users/{userId}/groups/{groupId}/name:
     patch:
       tags: ["groups"]
       summary: Set group name
@@ -242,14 +253,14 @@ paths:
             schema:
               type: object
               properties:
-                groupName: {$ref:"#/components/schemas/GroupName"}
+                groupName: { $ref: "#/components/schemas/GroupName" }
       responses:
         '200':
           description: Group name updated successfully
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /groups/{groupId}/photo:
+  /users/{userId}/groups/{groupId}/photo:
     patch:
       tags: ["groups"]
       summary: Set group photo
@@ -296,7 +307,7 @@ components:
       title: Users List
       description: |-
         A list of users for many responses.
-        It's used to get a list of users for the search, follower and followings lists, banned users list and likes list.
+        It's used to get a list of users for the search 
       type: array
       items:
         type: object
@@ -308,7 +319,7 @@ components:
       
     GroupName:
       description: A group name
-      type: string
+      type: object
       properties:
         name:
           description: Any string between 1 and 16
@@ -327,9 +338,9 @@ components:
       description: Represent a group
       type: object
       properties:
-        groupId: { $ref:"#/components/schemas/GroupID"}
-        groupName: { $ref:"#/components/schemas/GroupName"}
-        UserList: { $ref:"#/components/schemas/UserList"}
+        groupId: { $ref: "#/components/schemas/GroupID" }
+        groupName: { $ref: "#/components/schemas/GroupName" }
+        UserList: { $ref: "#/components/schemas/UsersList" }
 
     Photo: 
       description: Represent a photo
@@ -340,18 +351,70 @@ components:
           format: uri
           example: "https://example.com/photo.jpg"
 
-    Messages:
+    Message:
+      description: Represent a message 
+      type: string
+      example: "Hi!"
+      pattern: '^.*?$'
+      minLength: 1
+      maxLength: 500
+
+    MessageID:
+      description: A message's id
+      type: integer
+      example: 123456
+
+    Comment:
+      description: Represent a comment
+      type: string
+      example: "🌐"
+      pattern: '^[\u1F300-\u1F6FF\u1F900-\u1F9FF\u2600-\u26FF\u2700-\u27BF\uFE0F]+$'
+
+    CommentID:
+      description: A comment's id
+      type: integer
+      example: 123456
+
+#    Messages:
+#      type: object
+#      properties:
+#        conversationId: { $ref: "#/components/schemas/ConversationID" }
+#        sender: { $ref: "#/components/schemas/User" }
+#        content : { $ref: "#/components/schemas/Message" }
+#        timestamp: {$ref: "#/components/schemas/Timestamp" }    
+
+    Conversation:
+      description: Represent a conversation, includes foto, messages and comments
       type: object
       properties:
-        conversationId:
-          type: string
-          example: "conv123"
-        sender:
-          type: string
-          example: "Maria"
-        content:
-          type: string
-          example: "Ciao!"
+        photo: { $ref: "#/components/schemas/Photo" }        
+        conversationId: { $ref: "#/components/schemas/ConversationID" }
+        sender: { $ref: "#/components/schemas/User" }
+        content : { $ref: "#/components/schemas/Message" }
+        comment: {$ref: "#/components/schemas/Comment"}
+        timestamp: {$ref: "#/components/schemas/Timestamp" }        
+
+    ConversationID:
+      description: A message's id 
+      type: integer
+      example: 123456
+
+    listOfConversations:
+      description: Represent a list of conversations
+      type: array
+      minItems: 0
+      maxItems: 64
+      items: { $ref: "#/components/schemas/Conversation" }
+
+    Timestamp:
+      title: Timestamp
+      description: The timestamp of the message.
+      type: string
+      format: date-time
+      pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$"
+      example: "2024-12-31T23:59:59"
+      minLength: 19
+      maxLength: 19
 
     StatusInfo:
       title: Status Info
