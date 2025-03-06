@@ -217,7 +217,7 @@ paths:
                 conversationId: { $ref: "#/components/schemas/ConversationID" }
         required: true
       responses:
-        '204': {description: Message forwarded successfully }
+        '204': { description: Message forwarded successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
@@ -263,11 +263,7 @@ paths:
       summary: Remove a comment from a message
       operationId: uncommentMessage
       responses:
-        '200':
-          description: Comment removed successfully
-          content:
-            application/json: 
-              schema: { $ref: "#/components/schemas/Comment" }
+        '204': { description: Comment removed successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
       
@@ -292,8 +288,7 @@ paths:
       summary: Delete a message
       operationId: deleteMessage
       responses:
-        '200':
-          description: Message deleted successfully
+        '204': { description: Message deleted successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
@@ -346,8 +341,7 @@ paths:
       summary: Leave a group
       operationId: leaveGroup
       responses:
-        '200':
-          description: Successfully left the group
+        '204': { description: Successfully left the group }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
