@@ -60,6 +60,12 @@ paths:
         - bearerAuth: []
 
   /users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user who is setting the username.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
     patch:
       tags: ["User"]
       summary: Set my username
@@ -77,6 +83,12 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
   
   /users/{userId}/photo:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user who is setting a photo.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
     patch:
       tags: ["User"]
       summary: Set my profile photo
@@ -93,6 +105,13 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/{userId}/conversations:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user who is searching the conversation.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+
     get:
       tags: ["Conversations"]
       summary: Get user's conversations
@@ -105,17 +124,23 @@ paths:
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/conversations/{ConversationId}:
+  /users/{userId}/conversations/{conversationId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: conversationId
+        in: path
+        description: The ID of the conversation.
+        schema: { $ref: "#/components/schemas/ConversationID" }
+        required: true      
+      
     get:
       tags: ["Conversations"]
       summary: Get a conversation by ID
-      operationId: getConversation
-      parameters:
-        - name: conversationId
-          in: path
-          required: true
-          schema:
-            type: string
+      operationId: getConversation        
       responses:
         '200':
           description: Conversation details
@@ -123,6 +148,12 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
   
   /users/{userId}/messages:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
     post:
       tags: ["Messages"]
       summary: Send a new message
@@ -138,7 +169,19 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/messages/{MessageId}/forward:
+  /users/{userId}/messages/{messageId}/forward:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: messageId
+        in: path
+        description: The ID of the message forwarded.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+
     post:
       tags: ["messages"]
       summary: Forward a message
@@ -159,7 +202,19 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/messages/{MessageId}/comment:
+  /users/{userId}/messages/{messageId}/comment:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: messageId
+        in: path
+        description: The ID of the message is commented.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+
     post:
       tags: ["Messages"]
       summary: Comment on a message
@@ -179,29 +234,29 @@ paths:
       tags: ["Messages"]
       summary: Remove a comment from a message
       operationId: uncommentMessage
-      parameters:
-        - name: MessageId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Comment removed successfully
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
-  /users/{userId}/messages/{MessageId}:
+  /users/{userId}/messages/{messageId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: messageId
+        in: path
+        description: The ID of the message deleted.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+
     delete:
       tags: ["Messages"]
       summary: Delete a message
       operationId: deleteMessage
-      parameters:
-        - name: MessageId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Message deleted successfully
@@ -209,6 +264,12 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/{userId}/groups:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
     post:
       tags: ["groups"]
       summary: Add user to group
@@ -225,16 +286,22 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/{userId}/groups/{groupId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: groupId
+        in: path
+        description: The ID of the group.
+        required: true
+        schema: { $ref: "#/components/schemas/GroupID" }
+
     delete:
       tags: ["groups"]
       summary: Leave a group
       operationId: leaveGroup
-      parameters:
-        - name: groupId
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         '200':
           description: Successfully left the group
@@ -242,6 +309,18 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/{userId}/groups/{groupId}/name:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: groupId
+        in: path
+        description: The ID of the group.
+        required: true
+        schema: { $ref: "#/components/schemas/GroupID" }
+
     patch:
       tags: ["groups"]
       summary: Set group name
@@ -261,6 +340,17 @@ paths:
         '500': { $ref: "#/components/responses/InternalServerError" }
 
   /users/{userId}/groups/{groupId}/photo:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: groupId
+        in: path
+        description: The ID of the group.
+        required: true
+        schema: { $ref: "#/components/schemas/GroupID" }
     patch:
       tags: ["groups"]
       summary: Set group photo
@@ -395,7 +485,7 @@ components:
         timestamp: {$ref: "#/components/schemas/Timestamp" }        
 
     ConversationID:
-      description: A message's id 
+      description: A conversation's id 
       type: integer
       example: 123456
 
