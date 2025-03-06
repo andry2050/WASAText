@@ -29,6 +29,9 @@ paths:
               schema: { $ref: "#/components/schemas/UserID" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+        
+      security:
+        - bearerAuth: []
 
   /users:
     parameters:
@@ -66,21 +69,25 @@ paths:
         description: The ID of the user who is setting the username.
         schema: { $ref: "#/components/schemas/UserID" }
         required: true
+
     patch:
       tags: ["User"]
       summary: Set my username
       operationId: setMyUserName
       requestBody:
-        required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/Username" }
+        required: true
       responses:
-        '204': { description: Username updated successfully }
+        '204': { description: Username set successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '401': { $ref: "#/components/responses/Unauthorized" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+
+      security:
+        - bearerAuth: []
   
   /users/{userId}/photo:
     parameters:
@@ -94,15 +101,18 @@ paths:
       summary: Set my profile photo
       operationId: setMyPhoto
       requestBody:
-        required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Photo" }              
+            schema: { $ref: "#/components/schemas/Photo" }   
+        required: true           
       responses:
-        '204': { description: Profile photo updated successfully }
+        '204': {description: Profile photo updated successfully}
         '400': { $ref: "#/components/responses/BadRequest" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/conversations:
     parameters:
@@ -123,6 +133,9 @@ paths:
         '401': { $ref: "#/components/responses/Unauthorized" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/conversations/{conversationId}:
     parameters:
@@ -146,6 +159,9 @@ paths:
           description: Conversation details
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
   
   /users/{userId}/messages:
     parameters:
@@ -159,15 +175,21 @@ paths:
       summary: Send a new message
       operationId: sendMessage
       requestBody:
-        required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/Message" }
+        required: true
       responses:
         '201':
           description: Message sent successfully
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/Message" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/messages/{messageId}/forward:
     parameters:
@@ -183,24 +205,24 @@ paths:
         required: true
 
     post:
-      tags: ["messages"]
+      tags: ["Messages"]
       summary: Forward a message
       operationId: forwardMessage
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                newConversationId:
-                  type: string
-                  example: "conv456"
+                conversationId: { $ref: "#/components/schemas/ConversationID" }
+        required: true
       responses:
-        '200':
-          description: Message forwarded successfully
+        '204': {description: Message forwarded successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+
+      security:
+        - bearerAuth: []
 
   /users/{userId}/messages/{messageId}/comment:
     parameters:
@@ -220,15 +242,21 @@ paths:
       summary: Comment on a message
       operationId: commentMessage
       requestBody:
-        required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/Comment" }
+        required: true
       responses:
         '201':
           description: Comment added successfully
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/Comment" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+
+      security:
+        - bearerAuth: []
 
     delete:
       tags: ["Messages"]
@@ -237,8 +265,14 @@ paths:
       responses:
         '200':
           description: Comment removed successfully
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/Comment" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/messages/{messageId}:
     parameters:
@@ -263,6 +297,9 @@ paths:
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
 
+      security:
+        - bearerAuth: []
+
   /users/{userId}/groups:
     parameters:
       - name: userId
@@ -271,19 +308,25 @@ paths:
         schema: { $ref: "#/components/schemas/UserID" }
         required: true
     post:
-      tags: ["groups"]
+      tags: ["Groups"]
       summary: Add user to group
       operationId: addToGroup
       requestBody:
-        required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/User" }
+        required: true
       responses:
         '200':
           description: User added to group successfully
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/UserID" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/groups/{groupId}:
     parameters:
@@ -299,7 +342,7 @@ paths:
         schema: { $ref: "#/components/schemas/GroupID" }
 
     delete:
-      tags: ["groups"]
+      tags: ["Groups"]
       summary: Leave a group
       operationId: leaveGroup
       responses:
@@ -307,6 +350,9 @@ paths:
           description: Successfully left the group
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+
+      security:
+        - bearerAuth: []
 
   /users/{userId}/groups/{groupId}/name:
     parameters:
@@ -322,22 +368,24 @@ paths:
         schema: { $ref: "#/components/schemas/GroupID" }
 
     patch:
-      tags: ["groups"]
+      tags: ["Groups"]
       summary: Set group name
       operationId: setGroupName
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
                 groupName: { $ref: "#/components/schemas/GroupName" }
+        required: true
       responses:
-        '200':
-          description: Group name updated successfully
+        '204': { description: Group name updated successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+      
+      security:
+        - bearerAuth: []
 
   /users/{userId}/groups/{groupId}/photo:
     parameters:
@@ -351,20 +399,27 @@ paths:
         description: The ID of the group.
         required: true
         schema: { $ref: "#/components/schemas/GroupID" }
+
     patch:
-      tags: ["groups"]
+      tags: ["Groups"]
       summary: Set group photo
       operationId: setGroupPhoto
       requestBody:
-        required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/Photo" }
+        required: true
       responses:
         '200':
           description: Group photo updated successfully
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/Photo" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
+        
+      security:
+        - bearerAuth: []
 
 
 components:
@@ -457,8 +512,10 @@ components:
     Comment:
       description: Represent a comment
       type: string
-      example: "🌐"
+      example: "😀👍🌟"
       pattern: '^[\u1F300-\u1F6FF\u1F900-\u1F9FF\u2600-\u26FF\u2700-\u27BF\uFE0F]+$'
+      minLength: 1
+      maxLength: 10
 
     CommentID:
       description: A comment's id
@@ -512,14 +569,26 @@ components:
       properties:
         status:
           type: string
+          description: "The status level"
           enum:
             - info
             - warning
             - critical
             - ""
-        title: { type: string }
-        message: { type: string }
-        url: { type: string }
+        title:
+          type: string
+          description: "The title of the status information"
+        message:
+          type: string
+          description: "A descriptive message about the status"
+        url:
+          type: string
+          description: "A URL associated with the status information"
+      example:
+        status: "warning"
+        title: "High CPU Usage"
+        message: "The CPU usage has exceeded 90% for the last 5 minutes."
+        url: "https://example.com/status/high-cpu-usage"
     
 
   responses:
