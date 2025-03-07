@@ -106,7 +106,7 @@ paths:
             schema: { $ref: "#/components/schemas/Photo" }   
         required: true           
       responses:
-        '204': {description: Profile photo updated successfully}
+        '204': { description: Profile photo updated successfully}
         '400': { $ref: "#/components/responses/BadRequest" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
@@ -157,6 +157,9 @@ paths:
       responses:
         '200':
           description: Conversation details
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/Message" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
       
@@ -180,7 +183,7 @@ paths:
             schema: { $ref: "#/components/schemas/Message" }
         required: true
       responses:
-        '201':
+        '200':
           description: Message sent successfully
           content:
             application/json: 
@@ -201,7 +204,7 @@ paths:
       - name: messageId
         in: path
         description: The ID of the message forwarded.
-        schema: { $ref: "#/components/schemas/UserID" }
+        schema: { $ref: "#/components/schemas/MessageID" }
         required: true
 
     post:
@@ -234,11 +237,11 @@ paths:
       - name: messageId
         in: path
         description: The ID of the message is commented.
-        schema: { $ref: "#/components/schemas/UserID" }
+        schema: { $ref: "#/components/schemas/MessageID" }
         required: true
 
     post:
-      tags: ["Messages"]
+      tags: ["Comment"]
       summary: Comment on a message
       operationId: commentMessage
       requestBody:
@@ -247,7 +250,7 @@ paths:
             schema: { $ref: "#/components/schemas/Comment" }
         required: true
       responses:
-        '201':
+        '200':
           description: Comment added successfully
           content:
             application/json: 
@@ -258,8 +261,26 @@ paths:
       security:
         - bearerAuth: []
 
+  /users/{userId}/messages/{messageId}/comment/{commentId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The ID of the user.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: messageId
+        in: path
+        description: The ID of the message is commented.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: commentId
+        in: path
+        description: The ID of the message is commented.
+        schema: { $ref: "#/components/schemas/CommentID" }
+        required: true
+
     delete:
-      tags: ["Messages"]
+      tags: ["Comment"]
       summary: Remove a comment from a message
       operationId: uncommentMessage
       responses:
@@ -280,7 +301,7 @@ paths:
       - name: messageId
         in: path
         description: The ID of the message deleted.
-        schema: { $ref: "#/components/schemas/UserID" }
+        schema: { $ref: "#/components/schemas/MessageID" }
         required: true
 
     delete:
