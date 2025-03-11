@@ -1,0 +1,56 @@
+package api
+
+// TODO modificare tutti i return in http.error
+
+import (
+	"encoding/json"
+	"net/http"
+	"sort"
+	"strconv"
+
+	"github.com/andry2050/WASAText/service/api/reqcontext"
+	"github.com/julienschmidt/httprouter"
+)
+
+func (rt *_router) getMyConversation(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+
+	// Prendo il userid e lo converto in intero
+	userid, err := strconv.Atoi(ps.ByName("userid"))
+	if err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// Verifica se l'header Authorization è presente nella richiesta
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing token", http.StatusBadRequest)
+		return
+	}
+
+	authToken, err := strconv.Atoi(authHeader)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Valida il token
+	if userid != authToken {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	conversations := rt.db.GetConversations(userid)
+	sort.SliceStable(conversations, func(i, j int) bool {
+		return conversations[i].Timestamp.After(conversations[j].Timestamp)
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(conversations); err != nil {
+		ctx.Logger.WithError(err).Error("Error encoding the conversations")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+}

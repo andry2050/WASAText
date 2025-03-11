@@ -11,10 +11,16 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) setMyUsername(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+func (rt *_router) setGroupName(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	// Prendo il userid e lo converto in intero
+
 	userid, err := strconv.Atoi(ps.ByName("userid"))
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	groupid, err := strconv.Atoi(ps.ByName("groupid"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -34,29 +40,30 @@ func (rt *_router) setMyUsername(w http.ResponseWriter, r *http.Request, ps http
 	}
 
 	// Valida il token
-	if userid != authToken {
+	if groupid != authToken {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	var updatedUser User
-	err = json.NewDecoder(r.Body).Decode(&updatedUser)
+	var updatedGroup Group
+	err = json.NewDecoder(r.Body).Decode(&updatedGroup)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
-	} else if !updatedUser.IsValid() {
+	} else if !updatedGroup.IsValid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	updatedUser.UserID = userid
+	updatedGroup.GroupID = groupid
+	updatedGroup.UserID = userid
 
-	err = rt.db.UpdateUsername(updatedUser.ToDatabase())
+	err = rt.db.UpdateGroupName(updatedUser.ToDatabase())
 	if errors.Is(err, database.ErrUserDoesNotExist) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	} else if err != nil {
-		ctx.Logger.WithError(err).WithField("userid", userid).Error("can't update the username")
+		ctx.Logger.WithError(err).WithField("groupid", groupid).Error("can't update the group name")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -8,9 +8,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
-	messageid, err := strconv.Atoi(ps.ByName("messageid"))
+	groupid, err := strconv.Atoi(ps.ByName("groupid"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -41,12 +41,12 @@ func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	err = rt.db.DeleteMessage(userid, messageid)
+	err = rt.db.leaveGroup(userid, groupid)
 	if err != nil {
-		ctx.Logger.WithError(err).Error("Can't delete the message")
+		ctx.Logger.WithError(err).Error("can't leave the group")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Custom-Header", "Message deleted successfully")
+	w.Header().Set("Custom-Header", "Group leaved successfully")
 
 }

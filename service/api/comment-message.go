@@ -10,7 +10,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
+func (rt *_router) commentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
 
 	var comment Comment
 
@@ -43,7 +43,7 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 		return
 	}
 
-	postid, err := strconv.Atoi(ps.ByName("postid"))
+	postid, err := strconv.Atoi(ps.ByName("messageid"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -72,9 +72,9 @@ func (rt *_router) commentPhoto(w http.ResponseWriter, r *http.Request, ps httpr
 	comment.MessageID = messageid
 	comment.Text = text
 
-	err = rt.db.CommentPhoto(comment.ToDatabase())
+	err = rt.db.CommentMessage(comment.ToDatabase())
 	if err != nil {
-		ctx.Logger.WithError(err).Error("can't comment the photo")
+		ctx.Logger.WithError(err).Error("can't comment the message")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
