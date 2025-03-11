@@ -106,7 +106,7 @@ paths:
             schema: { $ref: "#/components/schemas/Photo" }   
         required: true           
       responses:
-        '204': { description: Profile photo updated successfully}
+        '204': { description: Profile photo updated successfully }
         '400': { $ref: "#/components/responses/BadRequest" }
         '403': { $ref: "#/components/responses/Forbidden" }
         '500': { $ref: "#/components/responses/InternalServerError" }
@@ -129,6 +129,9 @@ paths:
       responses:
         '200':
           description: List of conversations
+          content:
+            application/json: 
+              schema: { $ref: "#/components/schemas/listOfConversations" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '401': { $ref: "#/components/responses/Unauthorized" }
         '403': { $ref: "#/components/responses/Forbidden" }
