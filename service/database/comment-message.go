@@ -1,7 +1,7 @@
 package database
 
 func (db *appdbimpl) CommentMessage(c Comment) error {
-	res, err := db.c.Exec(`INSERT INTO comments (commentid, userid, messageid, text) VALUES (NULL, ?, ?, ?)`, c.UserID, c.MessageID, c.Text)
+	res, err := db.c.Exec(`INSERT INTO comments (commentid, userid, messageid, text) VALUES (NULL, ?, ?, ?)`, c.CommentID, c.UserID, c.MessageID, c.Text)
 	if err != nil {
 		return err
 	}
