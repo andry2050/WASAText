@@ -3,7 +3,7 @@ package api
 import (
 	"regexp"
 
-	"github.com/andry2050/wasa/service/database"
+	"github.com/andry2050/WASAText/service/database"
 )
 
 type User struct {

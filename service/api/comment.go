@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/andry2050/wasa/service/database"
+	"github.com/andry2050/WASAText/service/database"
 )
 
 type Comment struct {

@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"github.com/andry2050/wasa/service/api/reqcontext"
+	"github.com/andry2050/WASAText/service/api/reqcontext"
 	"github.com/julienschmidt/httprouter"
 )
 
