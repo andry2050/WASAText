@@ -7,8 +7,9 @@ info:
   version: 1.0.0
 paths:
   /session:
+    /session:
     post:
-      tags: ["Login"]
+      tags: ["login"]
       summary: Logs in the user
       description: |-
         If the user does not exist, it will be created,
@@ -19,16 +20,27 @@ paths:
         description: User details
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/Username" }
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Maria
+                  pattern: '^.*?$'
+                  minLength: 3
+                  maxLength: 16
         required: true
       responses:
         '201':
           description: User log-in action successful
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/UserID" }
-        '400': { $ref: "#/components/responses/BadRequest" }
-        '500': { $ref: "#/components/responses/InternalServerError" }
+              schema:
+                type: object
+                properties:
+                  identifier:
+                    type: string
+                    example: "abcdef012345"
         
       security:
         - bearerAuth: []
@@ -323,27 +335,68 @@ paths:
     parameters:
       - name: userId
         in: path
-        description: The ID of the user.
+        description: L'ID dell'utente che sta creando il gruppo.
         schema: { $ref: "#/components/schemas/UserID" }
         required: true
     post:
       tags: ["Groups"]
-      summary: Add user to group
-      operationId: addToGroup
+      summary: Crea un nuovo gruppo
+      operationId: createGroup
+      description: L'utente può creare un nuovo gruppo con altri utenti.
       requestBody:
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/User" }
+            schema:
+              type: object
+              properties:
+                groupName: { $ref: "#/components/schemas/GroupName" }
+                members:
+                  type: array
+                  description: Lista degli ID degli utenti da includere nel gruppo.
+                  items: { $ref: "#/components/schemas/UserID" }
         required: true
       responses:
-        '200':
-          description: User added to group successfully
+        '201':
+          description: Gruppo creato con successo.
           content:
             application/json: 
-              schema: { $ref: "#/components/schemas/UserID" }
+              schema: { $ref: "#/components/schemas/Group" }
         '400': { $ref: "#/components/responses/BadRequest" }
         '500': { $ref: "#/components/responses/InternalServerError" }
-      
+      security:
+        - bearerAuth: []
+
+  /users/{userId}/groups/{groupId}/members:
+    parameters:
+      - name: userId
+        in: path
+        description: L'ID dell'utente (già membro) che sta aggiungendo qualcuno.
+        schema: { $ref: "#/components/schemas/UserID" }
+        required: true
+      - name: groupId
+        in: path
+        description: L'ID del gruppo.
+        schema: { $ref: "#/components/schemas/GroupID" }
+        required: true
+    post:
+      tags: ["Groups"]
+      summary: Aggiunge un utente a un gruppo esistente
+      operationId: addToGroup
+      description: I membri del gruppo possono aggiungere altri utenti al gruppo.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userIdToAdd: { $ref: "#/components/schemas/UserID" }
+        required: true
+      responses:
+        '201':
+          description: Utente aggiunto al gruppo con successo.
+        '400': { $ref: "#/components/responses/BadRequest" }
+        '403': { $ref: "#/components/responses/Forbidden" }
+        '500': { $ref: "#/components/responses/InternalServerError" }
       security:
         - bearerAuth: []
 
@@ -456,8 +509,8 @@ components:
 
     UserID: #Rappresenta l'identificativo dell'utente
       description: A user's id
-      type: integer
-      example: 123456
+      type: string
+      example: "abcde123456"
 
     User:
       description: Represent a user
@@ -515,12 +568,38 @@ components:
           example: "https://example.com/photo.jpg"
 
     Message:
-      description: Represent a message 
-      type: string
-      example: "Hi!"
-      pattern: '^.*?$'
-      minLength: 1
-      maxLength: 500
+      description: Represents a message within a conversation.
+      type: object
+      properties:
+        messageId: { $ref: "#/components/schemas/MessageID" }
+        sender: { $ref: "#/components/schemas/User" }
+        contentType:
+          type: string
+          enum: [text, photo]
+          description: "Indicates whether the message is a text or a photo."
+          example: "text"
+        content:
+          type: string
+          description: "The text content or the photo URL"
+          example: "Ciao, che fai?"
+        timestamp: { $ref: "#/components/schemas/Timestamp" }
+        status:
+          type: string
+          enum: [sent, received, read]
+          description: >
+            Indicates the read status for sent messages. 
+            'sent' = no checkmarks.
+            'received' = 1 checkmark (received by all recipients).
+            'read' = 2 checkmarks (read by all recipients).
+        reactions:
+          type: array
+          description: "List of reactions (comments) left by users on this message."
+          items:
+            type: object
+            properties:
+              commentId: { $ref: "#/components/schemas/CommentID" }
+              user: { $ref: "#/components/schemas/User" }
+              emoticon: { $ref: "#/components/schemas/Comment" }
 
     MessageID:
       description: A message's id
@@ -557,7 +636,7 @@ components:
         sender: { $ref: "#/components/schemas/User" }
         content : { $ref: "#/components/schemas/Message" }
         comment: {$ref: "#/components/schemas/Comment"}
-        timestamp: {$ref: "#/components/schemas/Timestamp" }        
+       
 
     ConversationID:
       description: A conversation's id 
@@ -581,32 +660,32 @@ components:
       minLength: 19
       maxLength: 19
 
-    StatusInfo:
-      title: Status Info
-      type: object
-      properties:
-        status:
-          type: string
-          description: "The status level"
-          enum:
-            - info
-            - warning
-            - critical
-            - ""
-        title:
-          type: string
-          description: "The title of the status information"
-        message:
-          type: string
-          description: "A descriptive message about the status"
-        url:
-          type: string
-          description: "A URL associated with the status information"
-      example:
-        status: "warning"
-        title: "High CPU Usage"
-        message: "The CPU usage has exceeded 90% for the last 5 minutes."
-        url: "https://example.com/status/high-cpu-usage"
+    # StatusInfo:
+    #   title: Status Info
+    #   type: object
+    #   properties:
+    #     status:
+    #       type: string
+    #       description: "The status level"
+    #       enum:
+    #         - info
+    #         - warning
+    #         - critical
+    #         - ""
+    #     title:
+    #       type: string
+    #       description: "The title of the status information"
+    #     message:
+    #       type: string
+    #       description: "A descriptive message about the status"
+    #     url:
+    #       type: string
+    #       description: "A URL associated with the status information"
+    #   example:
+    #     status: "warning"
+    #     title: "High CPU Usage"
+    #     message: "The CPU usage has exceeded 90% for the last 5 minutes."
+    #     url: "https://example.com/status/high-cpu-usage"
     
 
   responses:
