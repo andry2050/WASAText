@@ -491,7 +491,7 @@ components:
     Username:
       description: A user's nickname
       type: string
-      example: "Viron35"
+      example: "Andry20"
       pattern: '^.*?$'
       minLength: 3
       maxLength: 16
