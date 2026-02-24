@@ -38,7 +38,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-<<<<<<< HEAD
 	"time"
 )
 
@@ -53,10 +52,17 @@ type User struct {
 }
 
 type Conversation struct {
-	ConversationID string `json:"id"`
-	Type           string `json:"type"` // "direct" o "group"
-	Name           string `json:"name,omitempty"`
-	PhotoURL       string `json:"photo_url,omitempty"`
+	ConversationID         string    `json:"id"`
+	Type                   string    `json:"type"` // "direct" o "group"
+	Name                   string    `json:"name"`
+	PhotoURL               string    `json:"photo_url"`
+	LastMessagePreview     string    `json:"last_message_preview"`
+	LastMessageTimestamp   string    `json:"last_message_timestamp"`
+}
+
+type ConversationDetails struct {
+	ConversationID string    `json:"id"`
+	Messages       []Message `json:"messages"`
 }
 
 type Participant struct {
@@ -82,6 +88,13 @@ type Reaction struct {
 	UserID     string `json:"-"`
 	User       User   `json:"user"`
 	Emoji      string `json:"emoji"`
+}
+
+type Group struct {
+	GroupID  string `json:"id"`
+	Name     string `json:"name"`
+	PhotoURL string `json:"photo_url"`
+	Members  []User `json:"members"`
 }
 
 // AppDatabase is the high level interface for the DB
@@ -111,14 +124,6 @@ type AppDatabase interface {
 	LeaveGroup(groupID string, userID string) error
 	SetGroupName(groupID string, name string) error
 	SetGroupPhoto(groupID string, photoPath string) error
-=======
-)
-
-// AppDatabase is the high level interface for the DB
-type AppDatabase interface {
-	GetName() (string, error)
-	SetName(name string) error
->>>>>>> 226708c2193c4ffc194ad5e11414bb2dfcf65d82
 
 	Ping() error
 }
@@ -128,18 +133,12 @@ type appdbimpl struct {
 }
 
 // New returns a new instance of AppDatabase based on the SQLite connection `db`.
-<<<<<<< HEAD
 func New(db *sql.DB) (AppDatabase, error) {
 
-=======
-// `db` is required - an error will be returned if `db` is `nil`.
-func New(db *sql.DB) (AppDatabase, error) {
->>>>>>> 226708c2193c4ffc194ad5e11414bb2dfcf65d82
 	if db == nil {
 		return nil, errors.New("database is required when building a AppDatabase")
 	}
 
-<<<<<<< HEAD
 	var err error
 
 	_, errPramga := db.Exec(`PRAGMA foreign_keys = ON`)
@@ -207,17 +206,6 @@ func New(db *sql.DB) (AppDatabase, error) {
 		);`)
 	if err != nil {
 		return nil, err
-=======
-	// Check if table exists. If not, the database is empty, and we need to create the structure
-	var tableName string
-	err := db.QueryRow(`SELECT name FROM sqlite_master WHERE type='table' AND name='example_table';`).Scan(&tableName)
-	if errors.Is(err, sql.ErrNoRows) {
-		sqlStmt := `CREATE TABLE example_table (id INTEGER NOT NULL PRIMARY KEY, name TEXT);`
-		_, err = db.Exec(sqlStmt)
-		if err != nil {
-			return nil, fmt.Errorf("error creating database structure: %w", err)
-		}
->>>>>>> 226708c2193c4ffc194ad5e11414bb2dfcf65d82
 	}
 
 	return &appdbimpl{
