@@ -109,6 +109,7 @@ type AppDatabase interface {
 	SendMessage(convID string, senderID string, content string, isPhoto bool) (Message, error)
 	ForwardMessage(msgID string, targetConvID string, senderID string) (Message, error)
 	DeleteMessage(msgID string, userID string) error
+	MarkMessagesAsRead(convID string, myID string) error
 
 	// Reactions (Comments)
 	CommentMessage(messageID string, userID string, reqBodyEmoji string) (Reaction, error)
