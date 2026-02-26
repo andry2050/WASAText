@@ -28,10 +28,6 @@ This is an example on how to migrate the DB and connect to it:
 
 Then you can initialize the AppDatabase and pass it to the api package.
 */
-<<<<<<< HEAD
-
-=======
->>>>>>> 226708c2193c4ffc194ad5e11414bb2dfcf65d82
 package database
 
 import (
@@ -52,12 +48,12 @@ type User struct {
 }
 
 type Conversation struct {
-	ConversationID         string    `json:"id"`
-	Type                   string    `json:"type"` // "direct" o "group"
-	Name                   string    `json:"name"`
-	PhotoURL               string    `json:"photo_url"`
-	LastMessagePreview     string    `json:"last_message_preview"`
-	LastMessageTimestamp   string    `json:"last_message_timestamp"`
+	ConversationID       string `json:"id"`
+	Type                 string `json:"type"` // "direct" o "group"
+	Name                 string `json:"name"`
+	PhotoURL             string `json:"photo_url"`
+	LastMessagePreview   string `json:"last_message_preview"`
+	LastMessageTimestamp string `json:"last_message_timestamp"`
 }
 
 type ConversationDetails struct {
@@ -104,26 +100,26 @@ type AppDatabase interface {
 	SetMyUserName(userID string, newName string) error
 	SetMyPhoto(userID string, photoPath string) error
 	SearchUsers(query string) ([]User, error)
-	
+
 	// Conversation operations
 	GetMyConversations(userID string) ([]Conversation, error)
-	GetConversation(conversationID string) (Conversation, error)
-	
+	GetConversation(conversationID string, userID string) (ConversationDetails, error)
+
 	// Message operations
-	SendMessage(msg Message) (Message, error)
+	SendMessage(convID string, senderID string, content string, isPhoto bool) (Message, error)
 	ForwardMessage(msgID string, targetConvID string, senderID string) (Message, error)
 	DeleteMessage(msgID string, userID string) error
-	
+
 	// Reactions (Comments)
-	CommentMessage(reaction Reaction) (Reaction, error)
-	UncommentMessage(reactionID string, userID string) error
+	CommentMessage(messageID string, userID string, reqBodyEmoji string) (Reaction, error)
+	UncommentMessage(messageID string, commentID string, userID string) error
 
 	// Group operations
-	CreateGroup(group Conversation, memberIDs []string) (Conversation, error)
-	AddToGroup(groupID string, userID string) error
+	CreateGroup(groupName string, memberIDs []string, creatorID string) (Group, error)
+	AddToGroup(groupID string, userID string, requesterID string) error
 	LeaveGroup(groupID string, userID string) error
-	SetGroupName(groupID string, name string) error
-	SetGroupPhoto(groupID string, photoPath string) error
+	SetGroupName(groupID string, name string, requesterID string) error
+	SetGroupPhoto(groupID string, photoPath string, requesterID string) error
 
 	Ping() error
 }

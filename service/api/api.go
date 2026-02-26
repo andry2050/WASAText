@@ -97,13 +97,3 @@ type _router struct {
 
 	db database.AppDatabase
 }
-
-// Handler returns the HTTP handler linked to the router
-func (rt *_router) Handler() http.Handler {
-	return rt.router
-}
-
-// Close gracefully closes the router resources
-func (rt *_router) Close() error {
-	return nil
-}

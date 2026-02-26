@@ -31,14 +31,17 @@ paths:
         If the user exists, the user identifier is returned.
       operationId: doLogin
       requestBody:
+        required: true
         description: User details
         content:
           application/json:
             schema:
               type: object
+              description: Object containing login details
               properties:
                 name:
                   type: string
+                  description: The username for login
                   example: Maria
                   pattern: '^.*?$'
                   minLength: 3
@@ -52,10 +55,15 @@ paths:
             application/json:
               schema:
                 type: object
+                description: Object containing the generated user identifier
                 properties:
                   identifier:
                     type: string
+                    description: The authentication token (user ID)
                     example: "abcdef012345"
+                    pattern: '^[a-zA-Z0-9_-]+$'
+                    minLength: 1
+                    maxLength: 256
 
   /users:
     get:
@@ -69,6 +77,10 @@ paths:
           description: The username (or a part of it) to search.
           schema:
             type: string
+            description: Query string for username search
+            pattern: '^.*$'
+            minLength: 1
+            maxLength: 64
           required: true
       responses:
         "200":
@@ -89,11 +101,13 @@ paths:
       description: Change the currently logged user's name, provided the new name is not already in use.
       operationId: setMyUserName
       requestBody:
+        required: true
         description: New username
         content:
           application/json:
             schema:
               type: object
+              description: Object containing the new username
               properties:
                 name: { $ref: "#/components/schemas/Username" }
               required:
@@ -114,11 +128,13 @@ paths:
       description: Upload a new profile photo for the logged-in user.
       operationId: setMyPhoto
       requestBody:
+        required: true
         description: The photo to upload
         content:
           multipart/form-data:
             schema:
               type: object
+              description: Object containing the binary photo file
               properties:
                 file: { $ref: "#/components/schemas/Photo" }
               required:
@@ -186,15 +202,20 @@ paths:
       description: Send a new text or photo message to the conversation.
       operationId: sendMessage
       requestBody:
+        required: true
         description: Message content (text or file)
         content:
           multipart/form-data:
             schema:
               type: object
+              description: Object containing either text or a photo file
               properties:
                 text:
                   type: string
                   description: Text content (if it's a text message)
+                  pattern: '^.*$'
+                  minLength: 0
+                  maxLength: 4096
                 file: { $ref: "#/components/schemas/Photo" }
       responses:
         "201":
@@ -221,11 +242,13 @@ paths:
       description: Forward an existing message to this conversation.
       operationId: forwardMessage
       requestBody:
+        required: true
         description: The ID of the message to forward.
         content:
           application/json:
             schema:
               type: object
+              description: Object containing the target message ID
               properties:
                 message_id: { $ref: "#/components/schemas/Identifier" }
               required:
@@ -278,15 +301,21 @@ paths:
       description: Add an emoticon reaction (comment) to a message.
       operationId: commentMessage
       requestBody:
+        required: true
         description: The emoticon to add.
         content:
           application/json:
             schema:
               type: object
+              description: Object containing the reaction emoji
               properties:
                 emoji:
                   type: string
+                  description: The emoji character
                   example: "😂"
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 8
               required:
                 - emoji
       responses:
@@ -334,17 +363,26 @@ paths:
       description: Create a new group with any number of other WASAText users.
       operationId: createGroup
       requestBody:
+        required: true
         description: Group details and initial members.
         content:
           application/json:
             schema:
               type: object
+              description: Object with group name and initial members list
               properties:
                 name:
                   type: string
+                  description: The name of the new group
                   example: "Study Group"
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 128
                 members:
                   type: array
+                  description: List of user IDs to add to the group
+                  minItems: 1
+                  maxItems: 100
                   items: { $ref: "#/components/schemas/Identifier" }
               required:
                 - name
@@ -374,11 +412,13 @@ paths:
       description: Add another user to the group. Only group members can perform this.
       operationId: addToGroup
       requestBody:
+        required: true
         description: User to add
         content:
           application/json:
             schema:
               type: object
+              description: Object containing the ID of the user to add
               properties:
                 user_id: { $ref: "#/components/schemas/Identifier" }
               required:
@@ -431,14 +471,20 @@ paths:
       description: Change the name of the group.
       operationId: setGroupName
       requestBody:
+        required: true
         description: New group name
         content:
           application/json:
             schema:
               type: object
+              description: Object containing the new group name
               properties:
                 name:
                   type: string
+                  description: The new name to set
+                  pattern: '^.*$'
+                  minLength: 1
+                  maxLength: 128
               required:
                 - name
       responses:
@@ -463,11 +509,13 @@ paths:
       description: Upload a new photo for the group.
       operationId: setGroupPhoto
       requestBody:
+        required: true
         description: The photo to upload
         content:
           multipart/form-data:
             schema:
               type: object
+              description: Object containing the new group photo binary
               properties:
                 file: { $ref: "#/components/schemas/Photo" }
               required:
@@ -487,6 +535,9 @@ components:
       description: A generic identifier used for Users, Groups, Messages, etc.
       type: string
       example: "abcdef012345"
+      pattern: '^[a-zA-Z0-9_-]+$'
+      minLength: 1
+      maxLength: 256
 
     Username:
       description: A user's nickname
@@ -505,16 +556,22 @@ components:
         photo_url:
           type: string
           description: URL or path to the profile photo
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 2048
 
     UsersList:
       description: A list of users.
       type: array
+      minItems: 0
+      maxItems: 1000
       items: { $ref: "#/components/schemas/User" }
 
     Photo:
       description: Represents a photo binary
       type: string
       format: binary
+      pattern: '^.*$'
       minLength: 0
       maxLength: 1000000000
 
@@ -523,6 +580,9 @@ components:
       type: string
       format: date-time
       example: "2023-10-31T23:59:59Z"
+      pattern: '^.*$'
+      minLength: 1
+      maxLength: 64
 
     Reaction:
       description: Represents a reaction (comment) to a message.
@@ -531,7 +591,11 @@ components:
         id: { $ref: "#/components/schemas/Identifier" }
         emoji:
           type: string
+          description: The emoji character used for the reaction
           example: "😂"
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 8
         user: { $ref: "#/components/schemas/User" }
 
     Message:
@@ -544,6 +608,9 @@ components:
         content:
           type: string
           description: The text content or image URL
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 4096
         is_photo:
           type: boolean
           description: True if the content is a photo
@@ -551,8 +618,14 @@ components:
           type: string
           enum: ["sent", "received", "read"]
           description: Indicates checkmark status.
+          pattern: '^[a-z]+$'
+          minLength: 1
+          maxLength: 32
         reactions:
           type: array
+          description: A list of reactions applied to this message
+          minItems: 0
+          maxItems: 100
           items: { $ref: "#/components/schemas/Reaction" }
 
     ConversationSummary:
@@ -563,20 +636,35 @@ components:
         type:
           type: string
           enum: ["direct", "group"]
+          description: Type of conversation
+          pattern: '^[a-z]+$'
+          minLength: 1
+          maxLength: 32
         name:
           type: string
           description: Username of the other person or the group name.
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 128
         photo_url:
           type: string
           description: User profile photo or group photo.
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 2048
         last_message_preview:
           type: string
           description: Snippet of text or an icon indicator for a photo.
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 256
         last_message_timestamp: { $ref: "#/components/schemas/Timestamp" }
 
     ConversationsList:
       description: List of conversation summaries.
       type: array
+      minItems: 0
+      maxItems: 1000
       items: { $ref: "#/components/schemas/ConversationSummary" }
 
     ConversationDetails:
@@ -586,6 +674,9 @@ components:
         id: { $ref: "#/components/schemas/Identifier" }
         messages:
           type: array
+          description: A list of all messages within the conversation
+          minItems: 0
+          maxItems: 100000
           items: { $ref: "#/components/schemas/Message" }
 
     Group:
@@ -595,10 +686,21 @@ components:
         id: { $ref: "#/components/schemas/Identifier" }
         name:
           type: string
+          description: Name of the group
+          pattern: '^.*$'
+          minLength: 1
+          maxLength: 128
         photo_url:
           type: string
+          description: URL or path to the group's profile photo
+          pattern: '^.*$'
+          minLength: 0
+          maxLength: 2048
         members:
           type: array
+          description: List of users belonging to the group
+          minItems: 1
+          maxItems: 100
           items: { $ref: "#/components/schemas/User" }
 
   responses:

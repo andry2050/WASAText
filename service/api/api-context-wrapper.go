@@ -1,11 +1,12 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/andry2050/WASAText/service/api/reqcontext"
 	"github.com/gofrs/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // httpRouterHandler is the signature for functions that accepts a reqcontext.RequestContext in addition to those
@@ -15,10 +16,7 @@ type httpRouterHandler func(http.ResponseWriter, *http.Request, httprouter.Param
 // wrap parses the request and adds a reqcontext.RequestContext instance related to the request.
 func (rt *_router) wrap(fn httpRouterHandler) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-		w.Header().Set("Access-Control-Max-Age", "1")
+
 		reqUUID, err := uuid.NewV4()
 		if err != nil {
 			rt.baseLogger.WithError(err).Error("can't generate a request UUID")
