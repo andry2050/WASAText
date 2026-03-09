@@ -1,56 +1,206 @@
 <script>
 export default {
-	data: function() {
+	data() {
 		return {
+			conversations: [],
 			errormsg: null,
 			loading: false,
-			some_data: null,
+
+			showGroupModal: false,
+			newGroupName: "",
+			searchQuery: "",
+			searchResults: [],
+			selectedMembers: [], 
+			creatingGroup: false,
 		}
 	},
 	methods: {
-		async refresh() {
+		async loadConversations() {
 			this.loading = true;
 			this.errormsg = null;
 			try {
-				let response = await this.$axios.get("/");
-				this.some_data = response.data;
+				let response = await this.$axios.get("/conversations");
+				this.conversations = response.data;
 			} catch (e) {
-				this.errormsg = e.toString();
+				this.errormsg = "Errore nel caricamento delle chat.";
 			}
 			this.loading = false;
 		},
+
+		openGroupModal() {
+			this.showGroupModal = true;
+			this.newGroupName = "";
+			this.searchQuery = "";
+			this.searchResults = [];
+			this.selectedMembers = [];
+		},
+		
+		closeGroupModal() {
+			this.showGroupModal = false;
+		},
+
+		async searchUsers() {
+			if (!this.searchQuery.trim()) return;
+			try {
+				let response = await this.$axios.get(`/users`, { params: { name: this.searchQuery.trim() } });
+				this.searchResults = response.data;
+			} catch (e) {
+				console.error("Errore ricerca utenti:", e);
+			}
+		},
+
+		isUserSelected(userId) {
+			return this.selectedMembers.some(m => m.id === userId);
+		},
+
+		addMemberToSelection(user) {
+			if (!this.isUserSelected(user.id)) {
+				this.selectedMembers.push(user);
+			}
+		},
+
+		removeMemberFromSelection(userId) {
+			this.selectedMembers = this.selectedMembers.filter(m => m.id !== userId);
+		},
+
+		async createGroup() {
+			if (!this.newGroupName.trim()) return;
+			this.creatingGroup = true;
+
+			try {
+				// Estrae solo gli ID dalla lista degli utenti selezionati
+				const memberIds = this.selectedMembers.map(m => m.id);
+
+				const response = await this.$axios.post("/groups", {
+					name: this.newGroupName.trim(),
+					members: memberIds
+				});
+
+				const newGroupId = response.data.id;
+
+				this.closeGroupModal();
+				
+				// Ricarica la lista (così si aggiorna la Home)
+				await this.loadConversations();
+
+				this.$router.push('/chat/' + newGroupId);
+
+			} catch (e) {
+				alert("Errore durante la creazione del gruppo.");
+				console.error(e);
+			}
+			this.creatingGroup = false;
+		}
 	},
 	mounted() {
-		this.refresh()
+		this.loadConversations();
 	}
 }
 </script>
 
 <template>
-	<div>
-		<div
-			class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-			<h1 class="h2">Home page</h1>
-			<div class="btn-toolbar mb-2 mb-md-0">
-				<div class="btn-group me-2">
-					<button type="button" class="btn btn-sm btn-outline-secondary" @click="refresh">
-						Refresh
-					</button>
-					<button type="button" class="btn btn-sm btn-outline-secondary" @click="exportList">
-						Export
-					</button>
+	<div class="container mt-3" style="max-width: 800px;">
+		
+		<div class="d-flex justify-content-between align-items-center pb-2 mb-3 border-bottom">
+			<h1 class="h3 mb-0">Le mie Chat</h1>
+			
+			<div>
+				<button class="btn btn-success me-2" @click="openGroupModal">
+					👥 Nuovo Gruppo
+				</button>
+			</div>
+		</div>
+
+		<div v-if="errormsg" class="alert alert-danger">{{ errormsg }}</div>
+
+		<div v-if="loading" class="text-center text-muted">Caricamento conversazioni...</div>
+
+		<div v-else-if="conversations.length === 0" class="text-center text-muted mt-5">
+			Nessuna conversazione trovata. Crea un gruppo per iniziare a chattare
+		</div>
+		
+		<div v-else class="list-group">
+			<div 
+				v-for="chat in conversations" 
+				:key="chat.id" 
+				class="list-group-item list-group-item-action d-flex align-items-center" 
+				style="cursor: pointer;" 
+				@click="$router.push('/chat/' + chat.id)"
+			>
+				<div class="me-3 fs-3">
+					{{ chat.type === 'group' ? '👥' : '👤' }}
 				</div>
-				<div class="btn-group me-2">
-					<button type="button" class="btn btn-sm btn-outline-primary" @click="newItem">
-						New
+				<div>
+					<strong class="mb-1 d-block">{{ chat.name }}</strong> 
+					<small class="text-muted">{{ chat.last_message_preview || 'Nessun messaggio' }}</small>
+				</div>
+			</div>
+		</div>
+
+		<div v-if="showGroupModal" class="modal-overlay d-flex justify-content-center align-items-center">
+			<div class="bg-white p-4 rounded shadow-lg w-100" style="max-width: 500px;">
+				<h3 class="h5 mb-3">Crea un Nuovo Gruppo</h3>
+				
+				<div class="mb-3">
+					<label class="form-label fw-bold">Nome del Gruppo</label>
+					<input v-model="newGroupName" type="text" class="form-control" placeholder="Es. Compagni di Università">
+				</div>
+
+				<div class="mb-3 border-top pt-3">
+					<label class="form-label fw-bold">Aggiungi Membri</label>
+					<div class="input-group mb-2">
+						<input v-model="searchQuery" type="text" class="form-control" placeholder="Cerca username..." @keyup.enter="searchUsers">
+						<button class="btn btn-outline-primary" @click="searchUsers">Cerca</button>
+					</div>
+					
+					<ul v-if="searchResults.length > 0" class="list-group mb-2" style="max-height: 150px; overflow-y: auto;">
+						<li v-for="user in searchResults" :key="user.id" class="list-group-item d-flex justify-content-between align-items-center p-2">
+							{{ user.name }}
+							<button 
+								class="btn btn-sm btn-outline-success" 
+								@click="addMemberToSelection(user)"
+								:disabled="isUserSelected(user.id)"
+							>
+								{{ isUserSelected(user.id) ? 'Aggiunto' : '+ Aggiungi' }}
+							</button>
+						</li>
+					</ul>
+				</div>
+
+				<div v-if="selectedMembers.length > 0" class="mb-3 p-2 bg-light rounded">
+					<span class="d-block small fw-bold mb-1">Membri selezionati:</span>
+					<div class="d-flex flex-wrap gap-1">
+						<span v-for="member in selectedMembers" :key="member.id" class="badge bg-primary text-white d-flex align-items-center p-2">
+							{{ member.name }}
+							<button class="btn-close btn-close-white ms-2" style="font-size: 0.5rem;" @click="removeMemberFromSelection(member.id)"></button>
+						</span>
+					</div>
+				</div>
+
+				<div class="d-flex justify-content-end gap-2 mt-4">
+					<button class="btn btn-secondary" @click="closeGroupModal">Annulla</button>
+					<button 
+						class="btn btn-success" 
+						@click="createGroup" 
+						:disabled="!newGroupName.trim() || creatingGroup"
+					>
+						{{ creatingGroup ? 'Creazione...' : 'Crea Gruppo' }}
 					</button>
 				</div>
 			</div>
 		</div>
 
-		<ErrorMsg v-if="errormsg" :msg="errormsg"></ErrorMsg>
 	</div>
 </template>
 
-<style>
+<style scoped>
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: rgba(0, 0, 0, 0.5); 
+	z-index: 1050;
+}
 </style>
