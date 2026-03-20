@@ -50,6 +50,5 @@ func (rt *_router) addToGroup(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-
 	w.WriteHeader(http.StatusNoContent)
 }

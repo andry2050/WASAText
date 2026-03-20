@@ -13,7 +13,7 @@ func (db *appdbimpl) SetGroupName(groupID string, newName string, requesterID st
 		WHERE convid = ? AND type = 'group' 
 		AND EXISTS (SELECT 1 FROM participants WHERE convid = ? AND userid = ?)
 	`
-	
+
 	res, err := db.c.Exec(query, newName, groupID, groupID, requesterID)
 	if err != nil {
 		return fmt.Errorf("errore esecuzione query aggiornamento nome gruppo: %w", err)

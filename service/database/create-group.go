@@ -15,7 +15,7 @@ func (db *appdbimpl) CreateGroup(groupName string, memberIDs []string, creatorID
 
 	// Unisce il creatore alla lista dei membri, evitando duplicati
 	uniqueMembers := make(map[string]bool)
-	uniqueMembers[creatorID] = true 
+	uniqueMembers[creatorID] = true
 	for _, id := range memberIDs {
 		uniqueMembers[id] = true
 	}
@@ -67,7 +67,7 @@ func (db *appdbimpl) CreateGroup(groupName string, memberIDs []string, creatorID
 	newGroup := Group{
 		GroupID:  groupID,
 		Name:     groupName,
-		PhotoURL: "", 
+		PhotoURL: "",
 		Members:  members,
 	}
 

@@ -43,10 +43,13 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	photoFileName := photoUUID.String() + ".jpg" 
-	
-	// Crea la cartella "uploads" se non esiste già
-	os.MkdirAll("uploads", os.ModePerm)
+	photoFileName := photoUUID.String() + ".jpg"
+
+	// Crea la cartella "uploads" se non esiste già, gestendo l'errore
+	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	photoPath := filepath.Join("uploads", photoFileName)
 
 	// Crea il file vuoto sul disco del server
@@ -66,7 +69,7 @@ func (rt *_router) setMyPhoto(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	// Il database aggiorna il profilo dell'utente con il nuovo percorso della foto
-	dbPhotoPath := "/" + photoPath 
+	dbPhotoPath := "/" + photoPath
 	err = rt.db.SetMyPhoto(userID, dbPhotoPath)
 	if err != nil {
 		ctx.Logger.WithError(err).Error("Errore database in setMyPhoto")

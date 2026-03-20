@@ -54,10 +54,10 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 			return nil, fmt.Errorf("errore lettura riga conversazione: %w", err)
 		}
 
-		// Crea l'anteprima del messaggio 
+		// Crea l'anteprima del messaggio
 		if msgTimestamp.Valid {
 			c.LastMessageTimestamp = msgTimestamp.Time.Format(time.RFC3339)
-			
+
 			// Se è una foto, mostra l'icona della macchina fotografica, altrimenti il testo
 			if msgIsPhoto.Valid && msgIsPhoto.Bool {
 				c.LastMessagePreview = "📷 Foto"

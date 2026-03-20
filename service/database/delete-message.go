@@ -13,7 +13,7 @@ func (db *appdbimpl) DeleteMessage(messageID string, userID string) error {
 	// Esegue la DELETE mettendo come condizione sia l'ID del messaggio, sia l'ID del mittente
 	// In questo modo è letteralmente impossibile che un utente cancelli il messaggio di un altro
 	query := `DELETE FROM messages WHERE msgid = ? AND senderid = ?`
-	
+
 	res, err := db.c.Exec(query, messageID, userID)
 	if err != nil {
 		return fmt.Errorf("errore esecuzione query di eliminazione: %w", err)
@@ -25,7 +25,7 @@ func (db *appdbimpl) DeleteMessage(messageID string, userID string) error {
 		return fmt.Errorf("errore controllo righe eliminate: %w", err)
 	}
 
-	// Se non è stata cancellata nessuna riga, significa che il messaggio non esiste 
+	// Se non è stata cancellata nessuna riga, significa che il messaggio non esiste
 	// oppure l'utente stava provando a cancellare un messaggio altrui
 	if rowsAffected == 0 {
 		return ErrMessageNotFoundOrForbidden

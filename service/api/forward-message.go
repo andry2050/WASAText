@@ -35,12 +35,12 @@ func (rt *_router) forwardMessage(w http.ResponseWriter, r *http.Request, ps htt
 		return
 	}
 
-	// Chiama il database per eseguire l'inoltro 
+	// Chiama il database per eseguire l'inoltro
 	newMsg, err := rt.db.ForwardMessage(reqBody.MessageID, targetConvID, senderID)
 	if err != nil {
 		ctx.Logger.WithError(err).Error("Errore durante l'inoltro del messaggio")
 		// Se l'errore è dovuto a permessi o messaggio non trovato
-		if errors.Is(err, database.ErrUserDoesNotExist) { 
+		if errors.Is(err, database.ErrUserDoesNotExist) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

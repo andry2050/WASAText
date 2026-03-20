@@ -11,7 +11,7 @@ import (
 // DoLogin verifica se un utente esiste: se esiste restituisce l'ID, altrimenti lo crea
 func (db *appdbimpl) DoLogin(username string) (string, error) {
 	var userID string
-	
+
 	// Cerca se l'utente esiste già
 	err := db.c.QueryRow(`SELECT userid FROM users WHERE username = ?`, username).Scan(&userID)
 
@@ -28,7 +28,7 @@ func (db *appdbimpl) DoLogin(username string) (string, error) {
 			if errInsert != nil {
 				return "", fmt.Errorf("errore inserimento nuovo utente: %w", errInsert)
 			}
-			
+
 			return userID, nil
 		}
 

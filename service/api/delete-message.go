@@ -28,7 +28,7 @@ func (rt *_router) deleteMessage(w http.ResponseWriter, r *http.Request, ps http
 			w.WriteHeader(http.StatusForbidden) // 403 Forbidden
 			return
 		}
-		
+
 		ctx.Logger.WithError(err).Error("Errore durante l'eliminazione del messaggio")
 		w.WriteHeader(http.StatusInternalServerError)
 		return

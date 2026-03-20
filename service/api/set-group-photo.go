@@ -38,7 +38,13 @@ func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps http
 
 	photoUUID, _ := uuid.NewV4()
 	photoFileName := photoUUID.String() + ".jpg"
-	os.MkdirAll("uploads", os.ModePerm)
+
+	// Crea la cartella controllando l'errore
+	if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	photoPath := filepath.Join("uploads", photoFileName)
 
 	dst, err := os.Create(photoPath)
@@ -53,7 +59,7 @@ func (rt *_router) setGroupPhoto(w http.ResponseWriter, r *http.Request, ps http
 		return
 	}
 
-	dbPhotoPath := "/" + photoPath 
+	dbPhotoPath := "/" + photoPath
 	err = rt.db.SetGroupPhoto(groupID, dbPhotoPath, requesterID)
 	if err != nil {
 		ctx.Logger.WithError(err).Error("Errore durante l'aggiornamento della foto del gruppo")

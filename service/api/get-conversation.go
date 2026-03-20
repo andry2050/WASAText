@@ -23,7 +23,7 @@ func (rt *_router) getConversation(w http.ResponseWriter, r *http.Request, ps ht
 	if err != nil {
 		// Se c'è un errore, potrebbe essere che la chat non esiste o l'utente non partecipa
 		ctx.Logger.WithError(err).Error("Errore durante il recupero della conversazione")
-		w.WriteHeader(http.StatusNotFound) 
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 

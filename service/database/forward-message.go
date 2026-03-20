@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -17,7 +18,7 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		return Message{}, fmt.Errorf("utente non fa parte della chat di destinazione")
 	}
 
-	// Recupera il contenuto del messaggio originale e verifica che l'utente faccia parte della 
+	// Recupera il contenuto del messaggio originale e verifica che l'utente faccia parte della
 	// chat da cui proviene il messaggio originale
 	var content string
 	var isPhoto bool
@@ -31,7 +32,7 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 	`
 	err = db.c.QueryRow(querySource, originalMsgID, senderID).Scan(&content, &isPhoto, &sourceConvID)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return Message{}, fmt.Errorf("messaggio originale non trovato o accesso negato")
 		}
 		return Message{}, fmt.Errorf("errore recupero messaggio originale: %w", err)

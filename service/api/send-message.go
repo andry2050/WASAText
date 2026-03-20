@@ -60,11 +60,11 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 			return
 		}
 
-		content = "/" + photoPath 
-	} else {	
+		content = "/" + photoPath
+	} else {
 		isPhoto = false
 		content = r.FormValue("text")
-		
+
 		// Se non c'è né foto né testo, la richiesta non è valida
 		if content == "" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -77,7 +77,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 	if err != nil {
 		ctx.Logger.WithError(err).Error("Errore salvataggio messaggio nel DB")
 		// Potrebbe essere che l'utente stia provando a scrivere in una chat a cui non appartiene
-		w.WriteHeader(http.StatusForbidden) 
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 

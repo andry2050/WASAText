@@ -21,10 +21,9 @@ func (rt *_router) leaveGroup(w http.ResponseWriter, r *http.Request, ps httprou
 	groupID := ps.ByName("group_id")
 	targetUserID := ps.ByName("user_id")
 
-
 	if requesterID != targetUserID {
 		ctx.Logger.Warning("Un utente ha provato a rimuovere un'altra persona dal gruppo")
-		w.WriteHeader(http.StatusForbidden) 
+		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 

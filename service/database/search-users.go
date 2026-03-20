@@ -14,26 +14,26 @@ func (db *appdbimpl) SearchUsers(searchQuery string) ([]User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("errore query ricerca utenti: %w", err)
 	}
-	defer rows.Close() 
+	defer rows.Close()
 
 	var users []User
-	
+
 	// Scorre i risultati trovati
 	for rows.Next() {
 		var u User
 		// La foto profilo potrebbe non esserci, quindi uso sql.NullString per evitare che il programma vada in crash
-		var photoURL sql.NullString 
-		
+		var photoURL sql.NullString
+
 		err = rows.Scan(&u.UserID, &u.Username, &photoURL)
 		if err != nil {
 			return nil, fmt.Errorf("errore lettura riga utente: %w", err)
 		}
-		
+
 		// Se la foto c'è la assegna all'utente
 		if photoURL.Valid {
 			u.PhotoURL = photoURL.String
 		}
-		
+
 		// Aggiunge l'utente alla lista
 		users = append(users, u)
 	}

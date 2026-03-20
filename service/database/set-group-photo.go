@@ -12,7 +12,7 @@ func (db *appdbimpl) SetGroupPhoto(groupID string, photoPath string, requesterID
 		WHERE convid = ? AND type = 'group' 
 		AND EXISTS (SELECT 1 FROM participants WHERE convid = ? AND userid = ?)
 	`
-	
+
 	res, err := db.c.Exec(query, photoPath, groupID, groupID, requesterID)
 	if err != nil {
 		return fmt.Errorf("errore esecuzione query aggiornamento foto gruppo: %w", err)

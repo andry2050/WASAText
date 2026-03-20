@@ -24,9 +24,9 @@ func (db *appdbimpl) SendMessage(convID string, senderID string, content string,
 	}
 	msgID := msgUUID.String()
 	timestamp := time.Now().UTC()
-	
+
 	// Imposta lo stato iniziale (una spunta = sent/received)
-	status := "sent" 
+	status := "sent"
 
 	// Inserisce il messaggio nella tabella
 	query := `INSERT INTO messages (msgid, convid, senderid, content, is_photo, status, timestamp) 

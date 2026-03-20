@@ -9,7 +9,7 @@ import (
 
 // uncommentMessage gestisce la rotta DELETE /messages/:message_id/comments/:comment_id
 func (rt *_router) uncommentMessage(w http.ResponseWriter, r *http.Request, ps httprouter.Params, ctx reqcontext.RequestContext) {
-	
+
 	userID := extractBearer(r)
 	if userID == "" {
 		w.WriteHeader(http.StatusUnauthorized)
