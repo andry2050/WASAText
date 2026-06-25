@@ -15,7 +15,7 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 	var isTargetParticipant bool
 	err := db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM participants WHERE convid = ? AND userid = ?)`, targetConvID, senderID).Scan(&isTargetParticipant)
 	if err != nil || !isTargetParticipant {
-		return Message{}, fmt.Errorf("utente non fa parte della chat di destinazione")
+		return Message{}, fmt.Errorf("Utente non fa parte della chat di destinazione")
 	}
 
 	// Recupera il contenuto del messaggio originale e verifica che l'utente faccia parte della
