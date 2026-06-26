@@ -44,7 +44,12 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		// Salva l'immagine
 		photoUUID, _ := uuid.NewV4()
 		photoFileName := photoUUID.String() + ".jpg"
-		os.MkdirAll("uploads", os.ModePerm)
+
+		if err := os.MkdirAll("uploads", os.ModePerm); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		photoPath := filepath.Join("uploads", photoFileName)
 
 		dst, err := os.Create(photoPath)

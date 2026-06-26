@@ -29,7 +29,7 @@ func (db *appdbimpl) CreateGroup(groupName string, memberIDs []string, creatorID
 	// Crea la conversazione principale
 	_, err = tx.Exec(`INSERT INTO conversations (convid, type, name, photo_url) VALUES (?, 'group', ?, '')`, groupID, groupName)
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return Group{}, fmt.Errorf("errore inserimento gruppo: %w", err)
 	}
 
@@ -37,7 +37,7 @@ func (db *appdbimpl) CreateGroup(groupName string, memberIDs []string, creatorID
 	for userID := range uniqueMembers {
 		_, err = tx.Exec(`INSERT INTO participants (convid, userid) VALUES (?, ?)`, groupID, userID)
 		if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			// Nel caso in cui l'ID di un utente inviato non esiste genera errore
 			return Group{}, fmt.Errorf("errore inserimento partecipante %s: %w", userID, err)
 		}
