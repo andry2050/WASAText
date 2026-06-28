@@ -7,7 +7,6 @@ COPY webui webui
 # Installa le dipendenze e compila Vue.js
 WORKDIR /app/webui
 RUN npm install
-# Nota: il vecchio progetto usava 'npm run build-prod'. Se in questo progetto usi Vite, il comando standard è 'npm run build'.
 RUN npm run build 
 
 # Crea il container finale con Nginx
