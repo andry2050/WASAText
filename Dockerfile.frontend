@@ -1,0 +1,19 @@
+FROM node:lts as builder
+
+# Copia la cartella del frontend
+WORKDIR /app
+COPY webui webui
+
+# Installa le dipendenze e compila Vue.js
+WORKDIR /app/webui
+RUN npm install
+# Nota: il vecchio progetto usava 'npm run build-prod'. Se in questo progetto usi Vite, il comando standard è 'npm run build'.
+RUN npm run build 
+
+# Crea il container finale con Nginx
+FROM nginx:stable
+
+# Copia l'app compilata dalla fase builder direttamente nella cartella pubblica di Nginx
+COPY --from=builder /app/webui/dist /usr/share/nginx/html
+
+# Nginx espone già la porta 80 di default e ha il suo CMD integrato

@@ -1,0 +1,21 @@
+FROM golang:1.26.4 AS builder
+
+# Copia tutto il codice sorgente Go
+WORKDIR /src/
+COPY . .
+
+# Compila l'eseguibile attivando esplicitamente CGO per SQLite
+RUN CGO_ENABLED=1 go build -o /app/webapi ./cmd/webapi
+
+# Crea il container finale leggero
+FROM debian:bullseye
+
+# Informa Docker che il backend ascolta sulla porta 3000
+EXPOSE 3000
+
+# Copia solo l'eseguibile finale dall'immagine builder
+WORKDIR /app/
+COPY --from=builder /app/webapi ./
+
+# Comando che verrà lanciato all'avvio del container
+CMD ["/app/webapi"]
