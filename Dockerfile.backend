@@ -4,8 +4,8 @@ FROM golang:1.26.4 AS builder
 WORKDIR /src/
 COPY . .
 
-# Compila l'eseguibile attivando esplicitamente CGO per SQLite
-RUN CGO_ENABLED=1 go build -o /app/webapi ./cmd/webapi
+# Compila l'eseguibile 
+RUN go build -o /app/webapi ./cmd/webapi
 
 # Crea il container finale leggero
 FROM debian:bullseye
