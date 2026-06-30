@@ -6,7 +6,7 @@ COPY webui webui
 
 # Installa le dipendenze e compila Vue.js
 WORKDIR /app/webui
-RUN npm run build-prod
+RUN yarn run build-prod
 
 # Crea il container finale con Nginx
 FROM nginx:stable
