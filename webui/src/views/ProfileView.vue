@@ -11,23 +11,21 @@
 		<div v-if="successMsg" class="alert alert-success">{{ successMsg }}</div>
 		<div v-if="errorMsg" class="alert alert-danger">{{ errorMsg }}</div>
 
+		<div class="text-center mb-4">
+			<img v-if="photo_url" :src="getPhotoUrl(photo_url)" class="rounded-circle shadow" style="width: 150px; height: 150px; object-fit: cover;" />
+			<div v-else class="rounded-circle bg-secondary d-flex justify-content-center align-items-center mx-auto text-white fs-1 shadow" style="width: 150px; height: 150px;">
+				👤
+			</div>
+		</div>
+
 		<div class="card mb-4 shadow-sm">
 			<div class="card-body">
 				<h5 class="card-title">Cambia Username</h5>
 				<p class="text-muted small">Il tuo username attuale è: <strong>{{ currentUsername }}</strong></p>
 				
 				<div class="input-group">
-					<input 
-						v-model="newUsername" 
-						type="text" 
-						class="form-control" 
-						placeholder="Nuovo username (3-16 caratteri)" 
-					/>
-					<button 
-						class="btn btn-primary" 
-						@click="changeUsername" 
-						:disabled="!newUsername || newUsername === currentUsername || loadingName"
-					>
+					<input v-model="newUsername" type="text" class="form-control" placeholder="Nuovo username" />
+					<button class="btn btn-primary" @click="changeUsername" :disabled="!newUsername || newUsername === currentUsername || loadingName">
 						{{ loadingName ? 'Salvataggio...' : 'Salva Nome' }}
 					</button>
 				</div>
@@ -37,26 +35,15 @@
 		<div class="card shadow-sm">
 			<div class="card-body">
 				<h5 class="card-title">Cambia Foto Profilo</h5>
-				<p class="text-muted small">Carica un'immagine per farti riconoscere nelle chat.</p>
 				
 				<input type="file" ref="photoInput" class="d-none" accept="image/*" @change="onPhotoSelected" />
 				
 				<div class="d-flex align-items-center gap-3">
-					<button class="btn btn-outline-secondary" @click="triggerPhotoInput">
-						Scegli Immagine...
-					</button>
-					
-					<span v-if="selectedPhoto" class="text-success small">
-						📎 {{ selectedFile.name }}
-					</span>
+					<button class="btn btn-outline-secondary" @click="triggerPhotoInput">Scegli Immagine...</button>
+					<span v-if="selectedPhoto" class="text-success small">📎 {{ selectedFile.name }}</span>
 				</div>
 
-				<button 
-					v-if="selectedPhoto" 
-					class="btn btn-success mt-3 w-100" 
-					@click="uploadPhoto"
-					:disabled="loadingPhoto"
-				>
+				<button v-if="selectedPhoto" class="btn btn-success mt-3 w-100" @click="uploadPhoto" :disabled="loadingPhoto">
 					{{ loadingPhoto ? 'Caricamento in corso...' : 'Carica e Salva Foto' }}
 				</button>
 			</div>
@@ -71,97 +58,68 @@ export default {
 		return {
 			currentUsername: localStorage.getItem("username"),
 			newUsername: "",
-			
+			photo_url: null, // Aggiunto per salvare la foto
 			selectedFile: null,
-			selectedPhoto: false, // Flag per sapere se c'è un file pronto
-
+			selectedPhoto: false,
 			loadingName: false,
 			loadingPhoto: false,
-
 			successMsg: "",
 			errorMsg: ""
 		}
 	},
 	methods: {
-		// --- CAMBIO NOME ---
+		getPhotoUrl(path) {
+			return this.$axios.defaults.baseURL + path; // Crea il link completo dell'immagine
+		},
+		async loadMyProfile() {
+			try {
+				// Cerca il tuo stesso utente per ottenere la foto
+				let res = await this.$axios.get("/users", { params: { username: this.currentUsername } });
+				if (res.data && res.data.length > 0) {
+					this.photo_url = res.data[0].photo_url;
+				}
+			} catch (e) { console.error("Errore caricamento profilo", e); }
+		},
 		async changeUsername() {
-			this.errorMsg = "";
-			this.successMsg = "";
-			
+			// ... (Mantieni il tuo codice originale per changeUsername) ...
+			this.errorMsg = ""; this.successMsg = "";
 			const cleanName = this.newUsername.trim();
-			if (cleanName.length < 3 || cleanName.length > 16) {
-				this.errorMsg = "Il nome deve essere compreso tra 3 e 16 caratteri.";
-				return;
-			}
-
+			if (cleanName.length < 3 || cleanName.length > 16) return;
 			this.loadingName = true;
 			try {
-				await this.$axios.put("/users/me/username", {
-					name: cleanName
-				});
-				
-				// Se ha successo, aggiorna il localStorage e l'interfaccia
+				await this.$axios.put("/users/me/username", { name: cleanName });
 				localStorage.setItem("username", cleanName);
-				this.currentUsername = cleanName;
-				this.newUsername = "";
+				this.currentUsername = cleanName; this.newUsername = "";
 				this.successMsg = "Username aggiornato con successo!";
-				
 			} catch (e) {
-				// Controlla se il backend ha risposto con 409 Conflict
-				if (e.response && e.response.status === 409) {
-					this.errorMsg = "Questo nome utente è già in uso da qualcun altro!";
-				} else {
-					this.errorMsg = "Errore durante il cambio del nome.";
-				}
+				this.errorMsg = "Errore durante il cambio del nome o nome già in uso.";
 			}
 			this.loadingName = false;
 		},
-
-		// --- CAMBIO FOTO ---
-		triggerPhotoInput() {
-			this.$refs.photoInput.click();
-		},
-		
+		triggerPhotoInput() { this.$refs.photoInput.click(); },
 		onPhotoSelected(event) {
 			const file = event.target.files[0];
-			if (file) {
-				this.selectedFile = file;
-				this.selectedPhoto = true;
-				this.successMsg = "";
-				this.errorMsg = "";
-			}
+			if (file) { this.selectedFile = file; this.selectedPhoto = true; }
 		},
-		
 		async uploadPhoto() {
-			this.errorMsg = "";
-			this.successMsg = "";
 			this.loadingPhoto = true;
-			
 			try {
 				const formData = new FormData();
 				formData.append("file", this.selectedFile);
-
 				await this.$axios.put("/users/me/photo", formData);
 				
 				this.successMsg = "Foto profilo aggiornata con successo!";
-				this.selectedFile = null;
-				this.selectedPhoto = false;
-				this.$refs.photoInput.value = ""; // Resetta l'input file
-				
+				this.selectedFile = null; this.selectedPhoto = false;
+				this.$refs.photoInput.value = ""; 
+				this.loadMyProfile(); // Ricarica la foto appena caricata!
 			} catch (e) {
 				this.errorMsg = "Errore durante il caricamento della foto.";
-				console.error(e);
 			}
 			this.loadingPhoto = false;
 		}
+	},
+	mounted() {
+		this.loadMyProfile(); // Carica la foto all'avvio
 	}
 }
 </script>
-
-<style scoped>
-.profile-container {
-	background-color: #f8f9fa;
-	padding: 2rem;
-	border-radius: 8px;
-}
-</style>

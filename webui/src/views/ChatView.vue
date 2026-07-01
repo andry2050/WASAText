@@ -6,10 +6,12 @@
 				<button class="btn btn-sm btn-outline-secondary me-3" @click="$router.push('/')">
 					⬅ Indietro
 				</button>
-				<h2 class="h4 mb-0">{{ chat ? chat.name : 'Caricamento...' }}</h2>
+				
+				<img v-if="chatInfo && chatInfo.photo_url" :src="getPhotoUrl(chatInfo.photo_url)" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+				<h2 class="h4 mb-0">{{ chatInfo ? chatInfo.name : 'Caricamento...' }}</h2>
 
-                <button class="btn btn-sm btn-info text-white ms-3" @click="openInfoModal" title="Impostazioni Gruppo">
-					ℹ️ Info Gruppo
+                <button class="btn btn-sm btn-info text-white ms-3" @click="openInfoModal" title="Impostazioni">
+					ℹ️ Info
 				</button>
 			</div>
 		</div>
@@ -197,7 +199,8 @@ export default {
 	data() {
 		return {
 			conversationId: this.$route.params.id,
-			chat: null, 
+			chat: null,
+			chatInfo: null,
 			myUserId: localStorage.getItem("token"),
 			messages: [],
 			newMessage: "",
@@ -296,14 +299,17 @@ export default {
 
 		async loadChat() {
 			try {
-				let response = await this.$axios.get(`/conversations/${this.conversationId}`);
-				this.chat = response.data;
-
-				// Diciamo al server che abbiamo letto i messaggi di questa chat
+				// Segna come letti
 				await this.$axios.put(`/conversations/${this.conversationId}/read`);
 				
+				// Cerca il nome e la foto della chat dalla lista generale
+				let res = await this.$axios.get("/conversations");
+				let conv = res.data.find(c => c.id === this.conversationId);
+				if (conv) {
+					this.chatInfo = conv;
+				}
 			} catch (e) {
-				console.error("Errore caricamento chat");
+				console.error("Errore caricamento info chat");
 			}
 		},
 
