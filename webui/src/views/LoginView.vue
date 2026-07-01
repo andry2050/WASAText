@@ -56,8 +56,8 @@ export default {
 
 				this.$axios.defaults.headers.common['Authorization'] = `Bearer ${userID}`;
 
-				// 5.  Porta alla pagina principale delle chat
-				this.$router.push("/chat"); 
+				// 5.  Porta alla pagina principale (home)
+				this.$router.push("/");
 				
 			} catch (error) {
 				// Se il server restituisce errore (es. 400 Bad Request o 500)

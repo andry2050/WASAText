@@ -6,7 +6,7 @@
 				<button class="btn btn-sm btn-outline-secondary me-3" @click="$router.push('/')">
 					⬅ Indietro
 				</button>
-				<h2 class="h4 mb-0">Conversazione</h2>
+				<h2 class="h4 mb-0">{{ chat ? chat.name : 'Caricamento...' }}</h2>
 
                 <button class="btn btn-sm btn-info text-white ms-3" @click="openInfoModal" title="Impostazioni Gruppo">
 					ℹ️ Info Gruppo
@@ -25,10 +25,10 @@
 					v-for="msg in messages" 
 					:key="msg.id" 
 					class="mb-3 p-2 border rounded"
-					:class="msg.sender.name === currentUsername ? 'bg-success bg-opacity-10 align-self-end w-75' : 'bg-white align-self-start w-75'"
+					:class="msg.sender === currentUsername ? 'bg-success bg-opacity-10 align-self-end w-75' : 'bg-white align-self-start w-75'"
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
-						<strong>{{ msg.sender.name }}</strong>
+						<strong>{{ msg.sender }}</strong>
 						
 						<div>
 							<small class="text-muted me-2">{{ new Date(msg.timestamp).toLocaleString() }}</small>
@@ -53,7 +53,7 @@
 							</button>
 
 							<button 
-								v-if="msg.sender.name === currentUsername" 
+								v-if="msg.sender === currentUsername" 
 								@click="deleteMessage(msg.id)" 
 								class="btn btn-sm text-danger p-0 border-0 bg-transparent" 
 								title="Elimina"
@@ -197,6 +197,8 @@ export default {
 	data() {
 		return {
 			conversationId: this.$route.params.id,
+			chat: null, 
+			myUserId: localStorage.getItem("token"),
 			messages: [],
 			newMessage: "",
 			selectedFile: null,
@@ -438,6 +440,7 @@ export default {
 		}
 	},
 	mounted() {
+		this.loadChat();
 		this.loadMessages();
 	}
 }
