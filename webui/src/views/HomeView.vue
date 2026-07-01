@@ -80,7 +80,7 @@ export default {
 
 				this.closeGroupModal();
 				
-				// Ricarica la lista (così si aggiorna la Home)
+				// Ricarica la lista così si aggiorna la Home
 				await this.loadConversations();
 
 				this.$router.push('/chat/' + newGroupId);

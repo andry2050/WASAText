@@ -4,6 +4,15 @@ import { RouterView } from 'vue-router'
 
 <script>
 export default {
+
+	created() {
+		// Controlla se c'è un token salvato quando si apre l'app
+		const token = localStorage.getItem("token");
+		if (token) {
+			this.$axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+		}
+	},
+
 	methods: {
 		logout() {
 			localStorage.removeItem("token");

@@ -459,7 +459,7 @@ input:disabled {
 	left: 0;
 	width: 100vw;
 	height: 100vh;
-	background: rgba(0, 0, 0, 0.5); /* Sfondo semi-trasparente nero */
-	z-index: 1050; /* Per farlo stare sopra a tutto il resto */
+	background: rgba(0, 0, 0, 0.5); 
+	z-index: 1050;
 }
 </style>

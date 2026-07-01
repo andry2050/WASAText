@@ -42,7 +42,7 @@ export default {
 			this.isLoggingIn = true;
 
 			try {
-				// 2. Chiamata al backend in Go che abbiamo scritto prima!
+				// 2. Chiamata al backend in Go
 				const response = await this.$axios.post("/session", {
 					name: cleanName,
 				});
@@ -50,11 +50,13 @@ export default {
 				// 3. Il backend ci risponde con l'identificatore (l'ID utente)
 				const userID = response.data.identifier;
 
-				// 4. Salviamo l'ID e il nome utente nella memoria del browser
+				// 4. Salva l'ID e il nome utente nella memoria del browser
 				localStorage.setItem("token", userID);
 				localStorage.setItem("username", cleanName);
 
-				// 5. Andiamo alla pagina principale delle chat!
+				this.$axios.defaults.headers.common['Authorization'] = `Bearer ${userID}`;
+
+				// 5.  Porta alla pagina principale delle chat
 				this.$router.push("/chat"); 
 				
 			} catch (error) {
@@ -70,7 +72,7 @@ export default {
 </script>
 
 <style scoped>
-/* Un po' di stile base per renderlo carino */
+
 .login-page {
 	display: flex;
 	justify-content: center;

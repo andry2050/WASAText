@@ -100,14 +100,14 @@ export default {
 					name: cleanName
 				});
 				
-				// Se ha successo, aggiorniamo il localStorage e l'interfaccia!
+				// Se ha successo, aggiorna il localStorage e l'interfaccia
 				localStorage.setItem("username", cleanName);
 				this.currentUsername = cleanName;
 				this.newUsername = "";
 				this.successMsg = "Username aggiornato con successo!";
 				
 			} catch (e) {
-				// Controlliamo se il backend ci ha risposto con 409 Conflict
+				// Controlla se il backend ha risposto con 409 Conflict
 				if (e.response && e.response.status === 409) {
 					this.errorMsg = "Questo nome utente è già in uso da qualcun altro!";
 				} else {
