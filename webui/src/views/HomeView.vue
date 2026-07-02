@@ -152,7 +152,7 @@ export default {
 			this.errormsg = null;
 			try {
 				let response = await this.$axios.get("/conversations");
-				this.conversations = response.data;
+				this.conversations = response.data || [];
 			} catch (e) {
 				this.errormsg = "Errore nel caricamento delle chat.";
 			}

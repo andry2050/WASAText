@@ -19,6 +19,12 @@ export default {
 		$route() {
 			this.token = localStorage.getItem("token");
 			this.username = localStorage.getItem("username");
+			
+			if (this.token) {
+				this.$axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+			} else {
+				delete this.$axios.defaults.headers.common['Authorization'];
+			}
 		}
 	},
 	methods: {

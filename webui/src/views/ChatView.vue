@@ -337,16 +337,21 @@ export default {
 
 		async loadChat() {
 			try {
-				await this.$axios.put(`/conversations/${this.conversationId}/read`);
+				// Segna silenziosamente i messaggi come letti
+				await this.$axios.put(`/conversations/${this.conversationId}/read`).catch(()=>{});
+				
 				let res = await this.$axios.get("/conversations");
-				let conv = res.data.find(c => c.id === this.conversationId);
+				
+				let conv = res.data.find(c => c.id === this.conversationId || (c.type === 'direct' && c.id.includes(this.conversationId)));
+				
 				if (conv) {
 					this.chatInfo = conv;
 				} else {
-					this.chatInfo = { name: "Nuova Chat (Scrivi per attivarla!)" };
+					// Fallback temporaneo finché non invia il primo messaggio
+					this.chatInfo = { name: "Nuova Chat Privata", type: 'direct' };
 				}
 			} catch (e) {
-				this.chatInfo = { name: "Nuova Chat (Scrivi per attivarla!)" };
+				this.chatInfo = { name: "Nuova Chat Privata", type: 'direct' };
 			}
 		},
 
