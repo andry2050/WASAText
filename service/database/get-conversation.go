@@ -6,16 +6,38 @@ import (
 	"time"
 )
 
-// GetConversation restituisce tutti i messaggi di una specifica conversazione
-func (db *appdbimpl) GetConversation(convID string, userID string) (ConversationDetails, error) {
-	// Controlla se l'utente fa parte della chat
-	var isParticipant bool
-	err := db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM participants WHERE convid = ? AND userid = ?)`, convID, userID).Scan(&isParticipant)
-	if err != nil || !isParticipant {
-		return ConversationDetails{}, fmt.Errorf("accesso negato o chat inesistente")
+func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (ConversationDetails, error) {
+	var realConvID string
+	var isConv bool
+
+	// Controlla se l'ID passato è di una conversazione esistente
+	db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM conversations WHERE convid = ?)`, targetOrConvID).Scan(&isConv)
+
+	if isConv {
+		realConvID = targetOrConvID
+	} else {
+		// Se non è una conversazione, calcola l'ID univoco della chat diretta
+		if userID < targetOrConvID {
+			realConvID = userID + "_" + targetOrConvID
+		} else {
+			realConvID = targetOrConvID + "_" + userID
+		}
 	}
 
-	// Prende i messaggi con i dati del mittente
+	// Controlla se l'utente fa parte della chat
+	var isParticipant bool
+	err := db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM participants WHERE convid = ? AND userid = ?)`, realConvID, userID).Scan(&isParticipant)
+
+	if err != nil || !isParticipant {
+		// La chat non esiste ancora perché non ci sono messaggi.
+		// Restituisce una chat vuota senza dare errore
+		return ConversationDetails{
+			ConversationID: realConvID,
+			Messages:       make([]Message, 0),
+		}, nil
+	}
+
+	// Prende i messaggi
 	query := `
 		SELECT 
 			m.msgid, m.senderid, u.username, u.photo_url, 
@@ -25,14 +47,13 @@ func (db *appdbimpl) GetConversation(convID string, userID string) (Conversation
 		WHERE m.convid = ?
 		ORDER BY m.timestamp DESC
 	`
-	rows, err := db.c.Query(query, convID)
+	rows, err := db.c.Query(query, realConvID)
 	if err != nil {
 		return ConversationDetails{}, fmt.Errorf("errore lettura messaggi: %w", err)
 	}
 	defer rows.Close()
 
 	var messages []Message
-
 	for rows.Next() {
 		var msg Message
 		var msgTime time.Time
@@ -51,24 +72,16 @@ func (db *appdbimpl) GetConversation(convID string, userID string) (Conversation
 			msg.Sender.PhotoURL = photoURL.String
 		}
 		msg.Timestamp = msgTime
-
 		msg.Reactions = make([]Reaction, 0)
-
 		messages = append(messages, msg)
-	}
-
-	if err = rows.Err(); err != nil {
-		return ConversationDetails{}, fmt.Errorf("errore iterazione messaggi: %w", err)
 	}
 
 	if messages == nil {
 		messages = make([]Message, 0)
 	}
 
-	details := ConversationDetails{
-		ConversationID: convID,
+	return ConversationDetails{
+		ConversationID: realConvID,
 		Messages:       messages,
-	}
-
-	return details, nil
+	}, nil
 }

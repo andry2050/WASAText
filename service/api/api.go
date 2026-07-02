@@ -82,6 +82,8 @@ func New(cfg Config) (Router, error) {
 	router.RedirectTrailingSlash = false
 	router.RedirectFixedPath = false
 
+	router.ServeFiles("/uploads/*filepath", http.Dir("uploads"))
+
 	return &_router{
 		router:     router,
 		baseLogger: cfg.Logger,
