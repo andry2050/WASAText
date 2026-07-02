@@ -22,20 +22,20 @@
 				Nessun messaggio. Scrivi qualcosa o invia una foto per iniziare
 			</div>
 			
-			<div v-else class="message-list d-flex flex-column">
+			<div class="message-list d-flex flex-column">
 				<div 
 					v-for="msg in messages" 
 					:key="msg.id" 
-					class="mb-3 p-2 border rounded"
-					:class="msg.sender === currentUsername ? 'bg-success bg-opacity-10 align-self-end w-75' : 'bg-white align-self-start w-75'"
+					class="mb-3 p-2 border rounded w-75"
+					:class="msg.sender.id === myUserId ? 'bg-success bg-opacity-10 align-self-end' : 'bg-white align-self-start'"
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
-						<strong>{{ msg.sender }}</strong>
+						<strong>{{ msg.sender.username }}</strong>
 						
 						<div>
 							<small class="text-muted me-2">{{ new Date(msg.timestamp).toLocaleString() }}</small>
 							
-							<small v-if="msg.sender_id === myUserId" :class="msg.status === 'read' ? 'text-primary' : 'text-muted'">
+							<small v-if="msg.sender.id === myUserId" :class="msg.status === 'read' ? 'text-primary' : 'text-muted'">
 									{{ msg.status === 'read' ? '✓✓' : '✓' }}
 							</small>
 							<button 
@@ -69,7 +69,7 @@
 						{{ msg.content }}
 					</div>
 					<div v-else class="text-center mt-2">
-						<img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
+                        <img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
 					</div>
 
 					<div v-if="activeEmojiPickerMsgId === msg.id" class="mt-2 p-1 bg-white border rounded shadow-sm d-flex gap-1 justify-content-start">
@@ -227,10 +227,18 @@ export default {
 			this.loading = true;
 			try {
 				let response = await this.$axios.get(`/conversations/${this.conversationId}`);
-				this.messages = response.data.messages.reverse(); 
+				if (response.data && response.data.messages) {
+					this.messages = response.data.messages.reverse(); 
+				} else {
+					this.messages = [];
+				}
 			} catch (e) {
-				console.error("Errore caricamento messaggi:", e);
-				alert("Impossibile caricare i messaggi.");
+				// Se è 404, significa solo che è una chat nuova senza messaggi
+				if (e.response && e.response.status === 404) {
+					this.messages = [];
+				} else {
+					console.error("Errore caricamento messaggi:", e);
+				}
 			}
 			this.loading = false;
 		},
@@ -251,8 +259,10 @@ export default {
 		},
 		
 		getPhotoUrl(path) {
-			const baseURL = this.$axios.defaults.baseURL || "";
-			return baseURL + path;
+			if (!path) return "";
+			// Costruisce sempre l'URL corretto puntando al backend
+			const baseUrl = this.$axios.defaults.baseURL || "http://localhost:3000";
+			return path.startsWith("http") ? path : baseUrl + (path.startsWith("/") ? "" : "/") + path;
 		},
 
         toggleEmojiPicker(messageId) {
@@ -299,17 +309,14 @@ export default {
 
 		async loadChat() {
 			try {
-				// Segna come letti
 				await this.$axios.put(`/conversations/${this.conversationId}/read`);
-				
-				// Cerca il nome e la foto della chat dalla lista generale
 				let res = await this.$axios.get("/conversations");
 				let conv = res.data.find(c => c.id === this.conversationId);
 				if (conv) {
 					this.chatInfo = conv;
 				}
 			} catch (e) {
-				console.error("Errore caricamento info chat");
+				// Ignora l'errore per le chat appena create
 			}
 		},
 

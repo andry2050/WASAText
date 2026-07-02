@@ -69,8 +69,11 @@ export default {
 	},
 	methods: {
 		getPhotoUrl(path) {
-			return this.$axios.defaults.baseURL + path; // Crea il link completo dell'immagine
+			if (!path) return "";
+			const baseUrl = this.$axios.defaults.baseURL || "http://localhost:3000";
+			return path.startsWith("http") ? path : baseUrl + (path.startsWith("/") ? "" : "/") + path;
 		},
+		
 		async loadMyProfile() {
 			try {
 				// Cerca il tuo stesso utente per ottenere la foto
