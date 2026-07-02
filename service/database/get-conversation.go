@@ -16,7 +16,7 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	if isConv {
 		realConvID = targetOrConvID
 	} else {
-		// Se non è una conversazione, calcola l'ID univoco della chat diretta
+		// Calcoliamo l'ID univoco della chat diretta
 		if userID < targetOrConvID {
 			realConvID = userID + "_" + targetOrConvID
 		} else {
@@ -29,13 +29,15 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	err := db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM participants WHERE convid = ? AND userid = ?)`, realConvID, userID).Scan(&isParticipant)
 
 	if err != nil || !isParticipant {
-		// La chat non esiste ancora perché non ci sono messaggi.
-		// Restituisce una chat vuota senza dare errore
 		return ConversationDetails{
 			ConversationID: realConvID,
 			Messages:       make([]Message, 0),
 		}, nil
 	}
+
+	// 🔴 FIX: SPUNTE DI LETTURA (Punti 3 e 9)
+	// Quando apro la chat, tutti i messaggi inviati dall'altra persona passano a "read" (Letti)
+	_, _ = db.c.Exec(`UPDATE messages SET status = 'read' WHERE convid = ? AND senderid != ? AND status != 'read'`, realConvID, userID)
 
 	// Prende i messaggi
 	query := `
@@ -72,7 +74,33 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 			msg.Sender.PhotoURL = photoURL.String
 		}
 		msg.Timestamp = msgTime
-		msg.Reactions = make([]Reaction, 0)
+
+		// 🔴 FIX: REAZIONI (Punti 7 e 10)
+		// Recuperiamo le reazioni associate a questo specifico messaggio
+		reacRows, errReac := db.c.Query(`
+			SELECT r.reactionid, r.emoji, u.userid, u.username 
+			FROM reactions r 
+			INNER JOIN users u ON r.userid = u.userid 
+			WHERE r.msgid = ?
+		`, msg.MessageID)
+
+		var reactions []Reaction
+		if errReac == nil {
+			for reacRows.Next() {
+				var r Reaction
+				var rUserID, rUserName string
+				reacRows.Scan(&r.ReactionID, &r.Emoji, &rUserID, &rUserName)
+				r.User = User{UserID: rUserID, Username: rUserName}
+				reactions = append(reactions, r)
+			}
+			reacRows.Close()
+		}
+
+		if reactions == nil {
+			reactions = make([]Reaction, 0)
+		}
+		msg.Reactions = reactions
+
 		messages = append(messages, msg)
 	}
 
