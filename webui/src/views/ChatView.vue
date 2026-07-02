@@ -65,11 +65,11 @@
 						</div>
 					</div>
 					
-					<div v-if="!msg.is_photo">
-						{{ msg.content }}
+					<div v-if="msg.is_photo || (msg.content && msg.content.includes('/uploads/'))" class="text-center mt-2">
+						<img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
 					</div>
-					<div v-else class="text-center mt-2">
-                        <img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
+					<div v-else>
+						{{ msg.content }}
 					</div>
 
 					<div v-if="activeEmojiPickerMsgId === msg.id" class="mt-2 p-1 bg-white border rounded shadow-sm d-flex gap-1 justify-content-start">
@@ -314,9 +314,12 @@ export default {
 				let conv = res.data.find(c => c.id === this.conversationId);
 				if (conv) {
 					this.chatInfo = conv;
+				} else {
+					// FIX: Il backend la nasconde perché è vuota. Mettiamo un nome fittizio!
+					this.chatInfo = { name: "Nuova Chat (Scrivi per attivarla!)" };
 				}
 			} catch (e) {
-				// Ignora l'errore per le chat appena create
+				this.chatInfo = { name: "Nuova Chat (Scrivi per attivarla!)" };
 			}
 		},
 

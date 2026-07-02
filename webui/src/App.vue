@@ -4,28 +4,26 @@ import { RouterView } from 'vue-router'
 
 <script>
 export default {
-
-	created() {
-		// Controlla se c'è un token salvato quando si apre l'app
-		const token = localStorage.getItem("token");
-		if (token) {
-			this.$axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+	data() {
+		return {
+			token: localStorage.getItem("token"),
+			username: localStorage.getItem("username")
 		}
 	},
-
+	watch: {
+		// Ogni volta che cambi pagina (es. da Login a Home), ricarica i dati!
+		$route() {
+			this.token = localStorage.getItem("token");
+			this.username = localStorage.getItem("username");
+		}
+	},
 	methods: {
 		logout() {
 			localStorage.removeItem("token");
 			localStorage.removeItem("username");
+			this.token = null;
+			this.username = null;
 			this.$router.push("/login");
-		}
-	},
-	computed: {
-		isLoggedIn() {
-			return !!localStorage.getItem("token");
-		},
-		username() {
-			return localStorage.getItem("username");
 		}
 	}
 }
@@ -36,7 +34,7 @@ export default {
 		<a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-5" href="#/">
 			💬 WASAText
 		</a>
-		<div class="navbar-nav" v-if="isLoggedIn">
+		<div class="navbar-nav" v-if="token">
 			<div class="nav-item text-nowrap d-flex align-items-center">
 				<span class="text-white me-3">Ciao, {{ username }}!</span>
 				
