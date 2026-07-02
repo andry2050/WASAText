@@ -6,19 +6,12 @@ import (
 	"time"
 )
 
-// GetMyConversations restituisce la lista delle chat dell'utente
 func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
-	// Trova le chat in cui l'utente è presente, se la chat è singola prende il nome e la foto dell'altro utente e l'ultimo messaggio
-	// per utilizzarlo come anteprima
 	query := `
 		SELECT
-			c.convid,
-			c.type,
-			COALESCE(NULLIF(c.name, ''), u.username, '') AS name,
-			COALESCE(NULLIF(c.photo_url, ''), u.photo_url, '') AS photo_url,
-			lm.content,
-			lm.is_photo,
-			lm.timestamp
+			c.convid, c.type, c.name, c.photo_url,
+			u.username, u.photo_url,
+			lm.content, lm.is_photo, lm.timestamp
 		FROM conversations c
 		INNER JOIN participants p1 ON c.convid = p1.convid AND p1.userid = ?
 		LEFT JOIN participants p2 ON c.convid = p2.convid AND p2.userid != ? AND c.type = 'direct'
@@ -34,10 +27,9 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 		ORDER BY lm.timestamp DESC
 	`
 
-	// Esegue la query passando l'ID dell'utente due volte (per p1 e p2)
 	rows, err := db.c.Query(query, userID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("errore query conversazioni: %w", err)
+		return nil, fmt.Errorf("errore query: %w", err)
 	}
 	defer rows.Close()
 
@@ -45,27 +37,37 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 
 	for rows.Next() {
 		var c Conversation
-		var msgContent sql.NullString
+		var cName, cPhoto, oUser, oPhoto, msgContent sql.NullString
 		var msgIsPhoto sql.NullBool
 		var msgTimestamp sql.NullTime
 
-		err = rows.Scan(&c.ConversationID, &c.Type, &c.Name, &c.PhotoURL, &msgContent, &msgIsPhoto, &msgTimestamp)
+		err = rows.Scan(&c.ConversationID, &c.Type, &cName, &cPhoto, &oUser, &oPhoto, &msgContent, &msgIsPhoto, &msgTimestamp)
 		if err != nil {
-			return nil, fmt.Errorf("errore lettura riga conversazione: %w", err)
+			return nil, err
 		}
 
-		// Crea l'anteprima del messaggio
+		// 🔴 LOGICA BLINDATA: Assegna il nome utente se è una chat privata!
+		if c.Type == "direct" {
+			c.Name = oUser.String
+			c.PhotoURL = oPhoto.String
+		} else {
+			c.Name = cName.String
+			c.PhotoURL = cPhoto.String
+		}
+
+		// Fallback di sicurezza
+		if c.Name == "" {
+			c.Name = "Utente sconosciuto"
+		}
+
 		if msgTimestamp.Valid {
 			c.LastMessageTimestamp = msgTimestamp.Time.Format(time.RFC3339)
-
-			// Se è una foto, mostra l'icona della macchina fotografica, altrimenti il testo
 			if msgIsPhoto.Valid && msgIsPhoto.Bool {
 				c.LastMessagePreview = "📷 Foto"
 			} else if msgContent.Valid {
 				c.LastMessagePreview = msgContent.String
 			}
 		} else {
-			// Se non ci sono messaggi nella chat
 			c.LastMessageTimestamp = ""
 			c.LastMessagePreview = "Nessun messaggio"
 		}
@@ -73,13 +75,8 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 		conversations = append(conversations, c)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("errore iterazione righe conversazioni: %w", err)
-	}
-
 	if conversations == nil {
 		conversations = make([]Conversation, 0)
 	}
-
 	return conversations, nil
 }

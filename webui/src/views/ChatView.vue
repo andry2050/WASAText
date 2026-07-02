@@ -43,9 +43,9 @@
 					</div>
 					
 					<div v-if="msg.content && isReply(msg.content)">
-						<div class="p-2 mb-1 bg-secondary bg-opacity-10 rounded" style="border-left: 4px solid #6c757d; font-size: 0.85rem;">
-							<strong class="text-primary">{{ getReplyUsername(msg.content) }}</strong><br>
-							<span class="text-muted text-break">{{ getReplySnippet(msg.content) }}</span>
+						<div class="alert alert-secondary py-1 px-2 mb-1 d-flex flex-column" style="border-left: 4px solid #6c757d; border-radius: 4px;">
+							<strong class="text-primary small">{{ getReplyUsername(msg.content) }}</strong>
+							<span class="text-muted small text-truncate">{{ getReplySnippet(msg.content) }}</span>
 						</div>
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
 					</div>
@@ -141,42 +141,53 @@
     <div v-if="showInfoModal" class="modal-overlay d-flex justify-content-center align-items-center">
         <div class="bg-white p-4 rounded shadow-lg w-100" style="max-width: 450px; max-height: 90vh; overflow-y: auto;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h3 class="h5 mb-0">Impostazioni Gruppo</h3>
+                <h3 class="h5 mb-0">{{ chatInfo.type === 'group' ? 'Impostazioni Gruppo' : 'Info Profilo' }}</h3>
                 <button class="btn-close" @click="closeInfoModal"></button>
             </div>
             
-            <div class="mb-4">
-                <label class="form-label fw-bold small">Cambia Nome</label>
-                <div class="input-group">
-                    <input v-model="newGroupName" type="text" class="form-control form-control-sm" placeholder="Nuovo nome...">
-                    <button class="btn btn-sm btn-primary" @click="updateGroupName" :disabled="!newGroupName">Salva</button>
+            <template v-if="chatInfo.type === 'group'">
+                <div class="mb-4">
+                    <label class="form-label fw-bold small">Cambia Nome</label>
+                    <div class="input-group">
+                        <input v-model="newGroupName" type="text" class="form-control form-control-sm" placeholder="Nuovo nome...">
+                        <button class="btn btn-sm btn-primary" @click="updateGroupName" :disabled="!newGroupName">Salva</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="mb-4">
-                <label class="form-label fw-bold small">Cambia Foto</label>
-                <input type="file" ref="groupPhotoInput" class="d-none" accept="image/*" @change="onGroupPhotoSelected" />
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-outline-secondary w-100" @click="$refs.groupPhotoInput.click()">Scegli Foto...</button>
-                    <button class="btn btn-sm btn-success w-100" v-if="selectedGroupPhoto" @click="updateGroupPhoto">Carica Foto</button>
+                <div class="mb-4">
+                    <label class="form-label fw-bold small">Cambia Foto</label>
+                    <input type="file" ref="groupPhotoInput" class="d-none" accept="image/*" @change="onGroupPhotoSelected" />
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100" @click="$refs.groupPhotoInput.click()">Scegli Foto...</button>
+                        <button class="btn btn-sm btn-success w-100" v-if="selectedGroupPhoto" @click="updateGroupPhoto">Carica Foto</button>
+                    </div>
                 </div>
-                <small v-if="selectedGroupPhoto" class="text-success d-block mt-1">📎 {{ selectedGroupPhoto.name }}</small>
-            </div>
 
-            <div class="mb-4 border-top pt-3">
-                <label class="form-label fw-bold small">Aggiungi Membro (cerca username)</label>
-                <div class="input-group mb-2">
-                    <input v-model="searchUsername" type="text" class="form-control form-control-sm" placeholder="Username esatto...">
-                    <button class="btn btn-sm btn-outline-primary" @click="addMemberToGroup" :disabled="!searchUsername">Aggiungi</button>
+                <div class="mb-4 border-top pt-3">
+                    <label class="form-label fw-bold small">Aggiungi Membro</label>
+                    <div class="input-group mb-2">
+                        <input v-model="searchUsername" type="text" class="form-control form-control-sm" placeholder="Username esatto...">
+                        <button class="btn btn-sm btn-outline-primary" @click="addMemberToGroup" :disabled="!searchUsername">Aggiungi</button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="border-top pt-3 text-center">
-                <p class="text-muted small mb-2">Se esci, non potrai più leggere o inviare messaggi qui.</p>
-                <button class="btn btn-danger w-100" @click="leaveGroup">
-                    🚪 Abbandona Gruppo
-                </button>
-            </div>
+                <div class="border-top pt-3 text-center">
+                    <button class="btn btn-danger w-100" @click="leaveGroup">
+                        🚪 Abbandona Gruppo
+                    </button>
+                </div>
+            </template>
+
+            <template v-else>
+                <div class="text-center py-4">
+                    <div class="rounded-circle mx-auto mb-3 bg-secondary text-white d-flex justify-content-center align-items-center" style="width: 120px; height: 120px; overflow: hidden;">
+                        <img v-if="chatInfo.photo_url" :src="getPhotoUrl(chatInfo.photo_url)" style="width: 100%; height: 100%; object-fit: cover;">
+                        <span v-else class="fs-1">👤</span>
+                    </div>
+                    <h4 class="mb-1">{{ chatInfo.name }}</h4>
+                    <p class="text-muted small">Utente WASAText</p>
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -237,22 +248,21 @@ export default {
 		},
 
 		isReply(text) {
-			return text && typeof text === 'string' && text.startsWith('[Risposta a ') && text.includes(']\n');
+			return text && typeof text === 'string' && text.startsWith('[Risposta a ') && text.includes(']');
 		},
-
 		getReplyUsername(text) {
 			let match = text.match(/\[Risposta a (.*?):/);
 			return match ? match[1] : '';
 		},
-
 		getReplySnippet(text) {
-			let match = text.match(/\[Risposta a .*?: (.*?)\]\n/);
+			let match = text.match(/\[Risposta a .*?: (.*?)\]/);
 			return match ? match[1] : '';
 		},
-
 		getActualMessage(text) {
-			let idx = text.indexOf(']\n');
-			return text.substring(idx + 2);
+			let idx = text.indexOf(']');
+			let actual = text.substring(idx + 1);
+			if (actual.startsWith('\n')) actual = actual.substring(1);
+			return actual.trim();
 		},
 
 		triggerFileInput() { this.$refs.fileInput.click(); },
