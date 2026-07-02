@@ -123,28 +123,14 @@
 		</div>
 
 		<div class="input-group mt-auto">
-			<input 
-				v-model="newMessage" 
-				ref="msgInput"
-				type="text" 
-				class="form-control" 
-				placeholder="Scrivi un messaggio..." 
-				@keyup.enter="sendMessage"
-				:disabled="selectedFile !== null" 
-			/>
-			</div>
-
-
-		<div class="input-group mt-auto">
-			
 			<input type="file" ref="fileInput" class="d-none" accept="image/*" @change="onFileSelected" />
-			
 			<button class="btn btn-outline-secondary" @click="triggerFileInput" title="Allega foto">
 				📷
 			</button>
 			
 			<input 
 				v-model="newMessage" 
+				ref="msgInput"
 				type="text" 
 				class="form-control" 
 				placeholder="Scrivi un messaggio..." 
@@ -227,12 +213,10 @@
 <script>
 export default {
 	data() {
-		return {
+    return {
 			conversationId: this.$route.params.id,
 			chat: null,
 			chatInfo: null,
-			polling: null,
-        	replyingToMsg: null,
 			myUserId: localStorage.getItem("token"),
 			messages: [],
 			newMessage: "",
@@ -248,10 +232,13 @@ export default {
 			activeEmojiPickerMsgId: null, 
 			availableEmojis: ["👍", "❤️", "😂", "😮", "😢", "😡"],
 
-            showInfoModal: false,
+			showInfoModal: false,
 			newGroupName: "",
 			selectedGroupPhoto: null,
 			searchUsername: "",
+			
+			polling: null,       
+			replyingToMsg: null  
 		}
 	},
 	methods: {

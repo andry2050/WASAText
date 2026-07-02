@@ -10,8 +10,12 @@ export default {
 			username: localStorage.getItem("username")
 		}
 	},
+	created() {
+		if (this.token) {
+			this.$axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+		}
+	},
 	watch: {
-		// Ogni volta che cambi pagina ricarica i dati
 		$route() {
 			this.token = localStorage.getItem("token");
 			this.username = localStorage.getItem("username");
@@ -23,6 +27,8 @@ export default {
 			localStorage.removeItem("username");
 			this.token = null;
 			this.username = null;
+            // Rimuoviamo l'autorizzazione di Axios per sicurezza
+            delete this.$axios.defaults.headers.common['Authorization'];
 			this.$router.push("/login");
 		}
 	}
