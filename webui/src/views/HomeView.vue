@@ -137,7 +137,7 @@ export default {
 			conversations: [],
 			errormsg: null,
 			loading: false,
-			polling: null,
+
 			showChatModal: false, 
 			showGroupModal: false,
 			newGroupName: "",
@@ -145,6 +145,8 @@ export default {
 			searchResults: [],
 			selectedMembers: [], 
 			creatingGroup: false,
+			
+			polling: null 
 		}
 	},
 	methods: {
@@ -213,7 +215,6 @@ export default {
 			this.creatingGroup = true;
 
 			try {
-				// ERRORE FIXATO: Devi includere ANCHE IL TUO ID nei membri del gruppo!
 				const myUserId = localStorage.getItem("token");
 				const memberIds = [myUserId, ...this.selectedMembers.map(m => m.id)];
 
@@ -244,5 +245,6 @@ export default {
 		beforeUnmount() { // Distruggi l'intervallo quando l'utente cambia pagina
     		if (this.polling) clearInterval(this.polling);
 	}
+}
 }
 </script>
