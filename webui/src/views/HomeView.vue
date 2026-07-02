@@ -157,7 +157,7 @@ export default {
 				this.errormsg = "Errore nel caricamento delle chat.";
 			}
 			if (showLoader) this.loading = false;
-    	},
+		},
 
 		openChatModal() {
 			this.showChatModal = true;
@@ -232,14 +232,13 @@ export default {
 		},
 
 		mounted() {
-			this.loadConversations();
-			this.polling = setInterval(() => {
-				this.loadConversations();
-			}, 3000);
+				this.loadConversations(true);
+				this.polling = setInterval(() => {
+					this.loadConversations(false);
+				}, 3000);
 		},
-
-		beforeUnmount() { // Distruggi l'intervallo quando l'utente cambia pagina
-    		if (this.polling) clearInterval(this.polling);
+		beforeUnmount() {
+			if (this.polling) clearInterval(this.polling);
 		}
 	}
 }

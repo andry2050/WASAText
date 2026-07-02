@@ -42,11 +42,14 @@
 						</div>
 					</div>
 					
-					<div v-if="msg.content && msg.content.startsWith('[Risposta a ')" class="alert alert-secondary p-1 mb-1" style="font-size: 0.85rem; border-left: 3px solid #6c757d;">
-						<strong>{{ msg.content.substring(0, msg.content.indexOf(']') + 1) }}</strong><br>
-						{{ msg.content.substring(msg.content.indexOf(']') + 1).trim() }}
+					<div v-if="msg.content && isReply(msg.content)">
+						<div class="p-2 mb-1 bg-secondary bg-opacity-10 rounded" style="border-left: 4px solid #6c757d; font-size: 0.85rem;">
+							<strong class="text-primary">{{ getReplyUsername(msg.content) }}</strong><br>
+							<span class="text-muted text-break">{{ getReplySnippet(msg.content) }}</span>
+						</div>
+						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
 					</div>
-					<div v-else-if="!msg.is_photo && (!msg.content || !msg.content.includes('/uploads/'))">
+					<div v-else-if="!msg.is_photo && (!msg.content || !msg.content.includes('/uploads/'))" class="text-break">
 						{{ msg.content }}
 					</div>
 
@@ -64,7 +67,7 @@
 						<button v-for="emoji in availableEmojis" :key="emoji" @click="addReaction(msg.id, emoji)" class="btn btn-light btn-sm fs-5 p-1 border-0">{{ emoji }}</button>
 					</div>
 
-                    <div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
+					<div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
 						<span 
 							v-for="reaction in msg.reactions" 
 							:key="reaction.reactionid" 
@@ -86,10 +89,10 @@
 			<button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" @click="removeFile">❌ Rimuovi</button>
 		</div>
 
-		<div v-if="replyingToMsg" class="alert alert-secondary py-1 px-2 mb-1 d-flex justify-content-between align-items-center">
+		<div v-if="replyingToMsg" class="alert alert-secondary py-1 px-2 mb-1 d-flex justify-content-between align-items-center" style="border-left: 4px solid #6c757d;">
 			<span class="small text-truncate">
-				<strong>Risposta a {{ replyingToMsg.sender.username }}:</strong> 
-				{{ replyingToMsg.is_photo ? '📷 Foto' : replyingToMsg.content }}
+				<strong class="text-primary">{{ replyingToMsg.sender.username }}</strong><br>
+				<span class="text-muted">{{ replyingToMsg.is_photo ? '📷 Foto' : replyingToMsg.content }}</span>
 			</span>
 			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>
 		</div>
@@ -233,6 +236,25 @@ export default {
 			this.$refs.msgInput.focus(); // Porta il focus sulla tastiera
 		},
 
+		isReply(text) {
+			return text && typeof text === 'string' && text.startsWith('[Risposta a ') && text.includes(']\n');
+		},
+
+		getReplyUsername(text) {
+			let match = text.match(/\[Risposta a (.*?):/);
+			return match ? match[1] : '';
+		},
+
+		getReplySnippet(text) {
+			let match = text.match(/\[Risposta a .*?: (.*?)\]\n/);
+			return match ? match[1] : '';
+		},
+
+		getActualMessage(text) {
+			let idx = text.indexOf(']\n');
+			return text.substring(idx + 2);
+		},
+
 		triggerFileInput() { this.$refs.fileInput.click(); },
 		
 		onFileSelected(event) {
@@ -279,24 +301,24 @@ export default {
 			if (!text && !this.selectedFile) return;
 
 			if (this.replyingToMsg && text) {
-				let snippet = this.replyingToMsg.is_photo ? "📷 Foto" : this.replyingToMsg.content.substring(0, 30) + "...";
+				let snippet = this.replyingToMsg.is_photo ? "📷 Foto" : this.replyingToMsg.content;
+				if (this.isReply(snippet)) snippet = this.getActualMessage(snippet);
+				if (snippet.length > 50) snippet = snippet.substring(0, 50) + "...";
 				text = `[Risposta a ${this.replyingToMsg.sender.username}: ${snippet}]\n${text}`;
 			}
 
 			this.sending = true;
 			try {
 				const formData = new FormData();
-				if (this.selectedFile) {
-					formData.append("file", this.selectedFile);
-				} else {
-					formData.append("text", text);
-				}
+				if (this.selectedFile) formData.append("file", this.selectedFile);
+				else formData.append("text", text);
 
 				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
+				
 				this.newMessage = ""; 
 				this.removeFile();
 				this.replyingToMsg = null;
-				this.loadMessages(false); 
+				this.loadMessages(); 
 			} catch (e) {
 				alert("Impossibile inviare il messaggio.");
 			}

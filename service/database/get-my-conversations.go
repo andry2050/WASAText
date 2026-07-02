@@ -14,8 +14,8 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 		SELECT
 			c.convid,
 			c.type,
-			COALESCE(c.name, u.username, '') AS name,
-			COALESCE(c.photo_url, u.photo_url, '') AS photo_url,
+			COALESCE(NULLIF(c.name, ''), u.username, '') AS name,
+			COALESCE(NULLIF(c.photo_url, ''), u.photo_url, '') AS photo_url,
 			lm.content,
 			lm.is_photo,
 			lm.timestamp
