@@ -1,107 +1,3 @@
-<script>
-export default {
-	data() {
-		return {
-			conversations: [],
-			errormsg: null,
-			loading: false,
-
-			showChatModal: false, 
-			showGroupModal: false,
-			newGroupName: "",
-			searchQuery: "",
-			searchResults: [],
-			selectedMembers: [], 
-			creatingGroup: false,
-		}
-	},
-	methods: {
-		async loadConversations() {
-			this.loading = true;
-			this.errormsg = null;
-			try {
-				let response = await this.$axios.get("/conversations");
-				this.conversations = response.data;
-			} catch (e) {
-				this.errormsg = "Errore nel caricamento delle chat.";
-			}
-			this.loading = false;
-		},
-
-		openChatModal() {
-			this.showChatModal = true;
-			this.searchQuery = "";
-			this.searchResults = [];
-		},
-
-		openGroupModal() {
-			this.showGroupModal = true;
-			this.newGroupName = "";
-			this.searchQuery = "";
-			this.searchResults = [];
-			this.selectedMembers = [];
-		},
-		
-		closeGroupModal() {
-			this.showGroupModal = false;
-		},
-
-		async searchUsers() {
-			if (!this.searchQuery.trim()) return;
-			try {
-				let response = await this.$axios.get(`/users`, { params: { username: this.searchQuery.trim() } });
-				this.searchResults = response.data;
-			} catch (e) {
-				console.error("Errore ricerca utenti:", e);
-			}
-		},
-
-		isUserSelected(userId) {
-			return this.selectedMembers.some(m => m.id === userId);
-		},
-
-		addMemberToSelection(user) {
-			if (!this.isUserSelected(user.id)) {
-				this.selectedMembers.push(user);
-			}
-		},
-
-		removeMemberFromSelection(userId) {
-			this.selectedMembers = this.selectedMembers.filter(m => m.id !== userId);
-		},
-
-		async createGroup() {
-			if (!this.newGroupName.trim()) return;
-			this.creatingGroup = true;
-
-			try {
-				// ERRORE FIXATO: Devi includere ANCHE IL TUO ID nei membri del gruppo!
-				const myUserId = localStorage.getItem("token");
-				const memberIds = [myUserId, ...this.selectedMembers.map(m => m.id)];
-
-				const response = await this.$axios.post("/groups", {
-					name: this.newGroupName.trim(),
-					members: memberIds
-				});
-
-				const newGroupId = response.data.id;
-				this.closeGroupModal();
-				this.$router.push('/chat/' + newGroupId);
-
-			} catch (e) {
-				alert("Errore durante la creazione del gruppo.");
-				console.error(e);
-			}
-			this.creatingGroup = false;
-		},
-
-		mounted() {
-			this.loadConversations();
-		}
-	}
-}
-</script>
-
 <template>
 	<div class="container mt-3" style="max-width: 800px;">
 		
@@ -135,6 +31,9 @@ export default {
 				@click="$router.push('/chat/' + chat.id)"
 			>
 				<img v-if="chat.photo_url" :src="$axios.defaults.baseURL + chat.photo_url" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+
+				<img v-if="chat.photo_url" :src="getPhotoUrl(chat.photo_url)" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+				
 				<div v-else class="me-3 fs-3">
 					{{ chat.type === 'group' ? '👥' : '👤' }}
 				</div>
@@ -230,3 +129,113 @@ export default {
 	z-index: 1050;
 }
 </style>
+
+<script>
+export default {
+	data() {
+		return {
+			conversations: [],
+			errormsg: null,
+			loading: false,
+
+			showChatModal: false, 
+			showGroupModal: false,
+			newGroupName: "",
+			searchQuery: "",
+			searchResults: [],
+			selectedMembers: [], 
+			creatingGroup: false,
+		}
+	},
+	methods: {
+		async loadConversations() {
+			this.loading = true;
+			this.errormsg = null;
+			try {
+				let response = await this.$axios.get("/conversations");
+				this.conversations = response.data;
+			} catch (e) {
+				this.errormsg = "Errore nel caricamento delle chat.";
+			}
+			this.loading = false;
+		},
+
+		openChatModal() {
+			this.showChatModal = true;
+			this.searchQuery = "";
+			this.searchResults = [];
+		},
+
+		openGroupModal() {
+			this.showGroupModal = true;
+			this.newGroupName = "";
+			this.searchQuery = "";
+			this.searchResults = [];
+			this.selectedMembers = [];
+		},
+		
+		closeGroupModal() {
+			this.showGroupModal = false;
+		},
+
+		async searchUsers() {
+			if (!this.searchQuery.trim()) return;
+			try {
+				let response = await this.$axios.get(`/users`, { params: { username: this.searchQuery.trim() } });
+				this.searchResults = response.data;
+			} catch (e) {
+				console.error("Errore ricerca utenti:", e);
+			}
+		},
+
+		isUserSelected(userId) {
+			return this.selectedMembers.some(m => m.id === userId);
+		},
+
+		addMemberToSelection(user) {
+			if (!this.isUserSelected(user.id)) {
+				this.selectedMembers.push(user);
+			}
+		},
+
+		removeMemberFromSelection(userId) {
+			this.selectedMembers = this.selectedMembers.filter(m => m.id !== userId);
+		},
+
+		getPhotoUrl(path) {
+			if (!path) return "";
+			const baseUrl = this.$axios.defaults.baseURL || "http://localhost:3000";
+			return path.startsWith("http") ? path : baseUrl + (path.startsWith("/") ? "" : "/") + path;
+		},
+		
+		async createGroup() {
+			if (!this.newGroupName.trim()) return;
+			this.creatingGroup = true;
+
+			try {
+				// ERRORE FIXATO: Devi includere ANCHE IL TUO ID nei membri del gruppo!
+				const myUserId = localStorage.getItem("token");
+				const memberIds = [myUserId, ...this.selectedMembers.map(m => m.id)];
+
+				const response = await this.$axios.post("/groups", {
+					name: this.newGroupName.trim(),
+					members: memberIds
+				});
+
+				const newGroupId = response.data.id;
+				this.closeGroupModal();
+				this.$router.push('/chat/' + newGroupId);
+
+			} catch (e) {
+				alert("Errore durante la creazione del gruppo.");
+				console.error(e);
+			}
+			this.creatingGroup = false;
+		},
+
+		mounted() {
+			this.loadConversations();
+		}
+	}
+}
+</script>
