@@ -11,7 +11,7 @@ export default {
 		}
 	},
 	watch: {
-		// Ogni volta che cambi pagina (es. da Login a Home), ricarica i dati!
+		// Ogni volta che cambi pagina ricarica i dati
 		$route() {
 			this.token = localStorage.getItem("token");
 			this.username = localStorage.getItem("username");

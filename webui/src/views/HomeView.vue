@@ -33,7 +33,7 @@
 				<img v-if="chat.photo_url" :src="$axios.defaults.baseURL + chat.photo_url" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
 
 				<img v-if="chat.photo_url" :src="getPhotoUrl(chat.photo_url)" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-				
+
 				<div v-else class="me-3 fs-3">
 					{{ chat.type === 'group' ? '👥' : '👤' }}
 				</div>
@@ -137,7 +137,7 @@ export default {
 			conversations: [],
 			errormsg: null,
 			loading: false,
-
+			polling: null,
 			showChatModal: false, 
 			showGroupModal: false,
 			newGroupName: "",
@@ -148,8 +148,8 @@ export default {
 		}
 	},
 	methods: {
-		async loadConversations() {
-			this.loading = true;
+		async loadConversations(showLoader = true) {
+			if (showLoader) this.loading = true;
 			this.errormsg = null;
 			try {
 				let response = await this.$axios.get("/conversations");
@@ -157,8 +157,8 @@ export default {
 			} catch (e) {
 				this.errormsg = "Errore nel caricamento delle chat.";
 			}
-			this.loading = false;
-		},
+			if (showLoader) this.loading = false;
+    	},
 
 		openChatModal() {
 			this.showChatModal = true;
@@ -234,8 +234,15 @@ export default {
 		},
 
 		mounted() {
-			this.loadConversations();
-		}
+			this.loadConversations(true);
+			// Polling: Interroga il backend ogni 3 secondi per nuove chat/messaggi
+			this.polling = setInterval(() => {
+				this.loadConversations(false);
+			}, 3000)
+		},
+
+		beforeUnmount() { // Distruggi l'intervallo quando l'utente cambia pagina
+    		if (this.polling) clearInterval(this.polling);
 	}
 }
 </script>

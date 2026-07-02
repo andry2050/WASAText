@@ -38,6 +38,15 @@
 							<small v-if="msg.sender.id === myUserId" :class="msg.status === 'read' ? 'text-primary' : 'text-muted'">
 									{{ msg.status === 'read' ? '✓✓' : '✓' }}
 							</small>
+
+							<button 
+								@click="replyTo(msg)" 
+								class="btn btn-sm text-success p-0 border-0 bg-transparent me-2" 
+								title="Rispondi"
+							>
+								↩️
+							</button>
+
 							<button 
 								@click="toggleEmojiPicker(msg.id)" 
 								class="btn btn-sm text-warning p-0 border-0 bg-transparent me-2" 
@@ -86,12 +95,12 @@
 					<div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
 						<span 
 							v-for="reaction in msg.reactions" 
-							:key="reaction.reactionid" 
+							:key="reaction.id" 
 							class="badge border text-dark p-1 d-flex align-items-center"
-							:class="reaction.user.name === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
-							:style="reaction.user.name === currentUsername ? 'cursor: pointer;' : ''"
-							@click="reaction.user.name === currentUsername ? removeReaction(msg.id, reaction.reactionid) : null"
-							:title="'Inserita da ' + reaction.user.name + (reaction.user.name === currentUsername ? ' (Clicca per rimuovere)' : '')"
+							:class="reaction.user.username === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
+							:style="reaction.user.username === currentUsername ? 'cursor: pointer;' : ''"
+							@click="reaction.user.username === currentUsername ? removeReaction(msg.id, reaction.id) : null"
+							:title="'Inserita da ' + reaction.user.username + (reaction.user.username === currentUsername ? ' (Clicca per rimuovere)' : '')"
 						>
 							<span class="fs-6">{{ reaction.emoji }}</span>
 						</span>
@@ -104,6 +113,27 @@
 			<span>📎 Foto selezionata: <strong>{{ selectedFile.name }}</strong></span>
 			<button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" @click="removeFile">❌ Rimuovi</button>
 		</div>
+
+		<div v-if="replyingToMsg" class="alert alert-secondary py-1 px-2 mb-1 d-flex justify-content-between align-items-center">
+			<span class="small text-truncate">
+				<strong>Risposta a {{ replyingToMsg.sender.username }}:</strong> 
+				{{ replyingToMsg.is_photo ? '📷 Foto' : replyingToMsg.content }}
+			</span>
+			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>
+		</div>
+
+		<div class="input-group mt-auto">
+			<input 
+				v-model="newMessage" 
+				ref="msgInput"
+				type="text" 
+				class="form-control" 
+				placeholder="Scrivi un messaggio..." 
+				@keyup.enter="sendMessage"
+				:disabled="selectedFile !== null" 
+			/>
+			</div>
+
 
 		<div class="input-group mt-auto">
 			
@@ -201,6 +231,8 @@ export default {
 			conversationId: this.$route.params.id,
 			chat: null,
 			chatInfo: null,
+			polling: null,
+        	replyingToMsg: null,
 			myUserId: localStorage.getItem("token"),
 			messages: [],
 			newMessage: "",
@@ -223,9 +255,12 @@ export default {
 		}
 	},
 	methods: {
-		async loadMessages() {
-			this.loading = true;
+		async loadMessages(showLoader = true) {
+			if (showLoader) this.loading = true;
 			try {
+				// Segna i messaggi silensiosamente come letti
+				await this.$axios.put(`/conversations/${this.conversationId}/read`).catch(()=>{});
+				
 				let response = await this.$axios.get(`/conversations/${this.conversationId}`);
 				if (response.data && response.data.messages) {
 					this.messages = response.data.messages.reverse(); 
@@ -233,14 +268,14 @@ export default {
 					this.messages = [];
 				}
 			} catch (e) {
-				// Se è 404, significa solo che è una chat nuova senza messaggi
-				if (e.response && e.response.status === 404) {
-					this.messages = [];
-				} else {
-					console.error("Errore caricamento messaggi:", e);
-				}
+				if (e.response && e.response.status === 404) { this.messages = []; }
 			}
-			this.loading = false;
+			if (showLoader) this.loading = false;
+		},
+		
+		replyTo(msg) {
+			this.replyingToMsg = msg;
+			this.$refs.msgInput.focus(); // Porta il focus sulla tastiera
 		},
 
 		triggerFileInput() { this.$refs.fileInput.click(); },
@@ -285,8 +320,13 @@ export default {
 		},
 
 		async sendMessage() {
-			const text = this.newMessage.trim();
+			let text = this.newMessage.trim();
 			if (!text && !this.selectedFile) return;
+
+			if (this.replyingToMsg && text) {
+				let snippet = this.replyingToMsg.is_photo ? "📷 Foto" : this.replyingToMsg.content.substring(0, 30) + "...";
+				text = `[Risposta a ${this.replyingToMsg.sender.username}: ${snippet}]\n${text}`;
+			}
 
 			this.sending = true;
 			try {
@@ -300,7 +340,8 @@ export default {
 				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
 				this.newMessage = ""; 
 				this.removeFile();
-				this.loadMessages(); 
+				this.replyingToMsg = null;
+				this.loadMessages(false); 
 			} catch (e) {
 				alert("Impossibile inviare il messaggio.");
 			}
@@ -315,7 +356,6 @@ export default {
 				if (conv) {
 					this.chatInfo = conv;
 				} else {
-					// FIX: Il backend la nasconde perché è vuota. Mettiamo un nome fittizio!
 					this.chatInfo = { name: "Nuova Chat (Scrivi per attivarla!)" };
 				}
 			} catch (e) {
@@ -457,7 +497,16 @@ export default {
 	},
 	mounted() {
 		this.loadChat();
-		this.loadMessages();
+		this.loadMessages(true);
+		
+		
+		this.polling = setInterval(() => {
+			this.loadMessages(false);
+			this.loadChat(); 
+		}, 2000);
+	},
+	beforeUnmount() {
+		if (this.polling) clearInterval(this.polling);
 	}
 }
 </script>
