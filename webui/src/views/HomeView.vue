@@ -30,12 +30,9 @@
 				style="cursor: pointer;" 
 				@click="$router.push('/chat/' + chat.id)"
 			>
-				<img v-if="chat.photo_url" :src="$axios.defaults.baseURL + chat.photo_url" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-
-				<img v-if="chat.photo_url" :src="getPhotoUrl(chat.photo_url)" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-
-				<div v-else class="me-3 fs-3">
-					{{ chat.type === 'group' ? '👥' : '👤' }}
+				<div class="rounded-circle me-3 bg-secondary text-white d-flex justify-content-center align-items-center" style="width: 50px; height: 50px; overflow: hidden;">
+					<img v-if="chat.photo_url" :src="getPhotoUrl(chat.photo_url)" style="width: 100%; height: 100%; object-fit: cover;">
+					<span v-else class="fs-4">{{ chat.type === 'group' ? '👥' : '👤' }}</span>
 				</div>
 
 				<div>
@@ -146,7 +143,7 @@ export default {
 			selectedMembers: [], 
 			creatingGroup: false,
 			
-			polling: null 
+			polling: null
 		}
 	},
 	methods: {
@@ -235,16 +232,15 @@ export default {
 		},
 
 		mounted() {
-			this.loadConversations(true);
-			// Polling: Interroga il backend ogni 3 secondi per nuove chat/messaggi
+			this.loadConversations();
 			this.polling = setInterval(() => {
-				this.loadConversations(false);
-			}, 3000)
+				this.loadConversations();
+			}, 3000);
 		},
 
 		beforeUnmount() { // Distruggi l'intervallo quando l'utente cambia pagina
     		if (this.polling) clearInterval(this.polling);
+		}
 	}
-}
 }
 </script>

@@ -3,16 +3,15 @@
 		
 		<div class="d-flex justify-content-between align-items-center pb-2 border-bottom">
 			<div class="d-flex align-items-center">
-				<button class="btn btn-sm btn-outline-secondary me-3" @click="$router.push('/')">
-					⬅ Indietro
-				</button>
+				<button class="btn btn-sm btn-outline-secondary me-3" @click="$router.push('/')">⬅ Indietro</button>
 				
-				<img v-if="chatInfo && chatInfo.photo_url" :src="getPhotoUrl(chatInfo.photo_url)" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+				<div class="rounded-circle me-2 bg-secondary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px; overflow: hidden;">
+					<img v-if="chatInfo && chatInfo.photo_url" :src="getPhotoUrl(chatInfo.photo_url)" style="width: 100%; height: 100%; object-fit: cover;">
+					<span v-else class="fs-4">{{ chatInfo && chatInfo.type === 'group' ? '👥' : '👤' }}</span>
+				</div>
 				<h2 class="h4 mb-0">{{ chatInfo ? chatInfo.name : 'Caricamento...' }}</h2>
 
-                <button class="btn btn-sm btn-info text-white ms-3" @click="openInfoModal" title="Impostazioni">
-					ℹ️ Info
-				</button>
+                <button class="btn btn-sm btn-info text-white ms-3" @click="openInfoModal" title="Impostazioni">ℹ️ Info</button>
 			</div>
 		</div>
 
@@ -26,81 +25,54 @@
 				<div 
 					v-for="msg in messages" 
 					:key="msg.id" 
-					class="mb-3 p-2 border rounded w-75"
+					class="mb-3 p-2 border rounded w-75 position-relative pb-4" 
 					:class="msg.sender.id === myUserId ? 'bg-success bg-opacity-10 align-self-end' : 'bg-white align-self-start'"
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
 						<strong>{{ msg.sender.username }}</strong>
 						
-						<div>
-							<small class="text-muted me-2">{{ new Date(msg.timestamp).toLocaleString() }}</small>
+						<div class="d-flex align-items-center">
+							<button @click="replyTo(msg)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Rispondi">↩️</button>
+							<button @click="openForwardModal(msg.id)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Inoltra">↪️</button>
+							<button @click="toggleEmojiPicker(msg.id)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Reagisci">😀</button>
+
+							<small class="text-muted ms-1">{{ new Date(msg.timestamp).toLocaleString().slice(0, 16) }}</small>
 							
-							<small v-if="msg.sender.id === myUserId" :class="msg.status === 'read' ? 'text-primary' : 'text-muted'">
-									{{ msg.status === 'read' ? '✓✓' : '✓' }}
-							</small>
-
-							<button 
-								@click="replyTo(msg)" 
-								class="btn btn-sm text-success p-0 border-0 bg-transparent me-2" 
-								title="Rispondi"
-							>
-								↩️
-							</button>
-
-							<button 
-								@click="toggleEmojiPicker(msg.id)" 
-								class="btn btn-sm text-warning p-0 border-0 bg-transparent me-2" 
-								title="Reagisci"
-							>
-								😀
-							</button>
-
-							<button 
-								@click="openForwardModal(msg.id)" 
-								class="btn btn-sm text-primary p-0 border-0 bg-transparent me-2" 
-								title="Inoltra"
-							>
-								↪️
-							</button>
-
-							<button 
-								v-if="msg.sender === currentUsername" 
-								@click="deleteMessage(msg.id)" 
-								class="btn btn-sm text-danger p-0 border-0 bg-transparent" 
-								title="Elimina"
-							>
-								🗑️
-							</button>
+							<button v-if="msg.sender.username === currentUsername" @click="deleteMessage(msg.id)" class="btn btn-sm text-danger p-0 border-0 bg-transparent ms-2" title="Elimina">🗑️</button>
 						</div>
 					</div>
 					
-					<div v-if="msg.is_photo || (msg.content && msg.content.includes('/uploads/'))" class="text-center mt-2">
-						<img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
+					<div v-if="msg.content && msg.content.startsWith('[Risposta a ')" class="alert alert-secondary p-1 mb-1" style="font-size: 0.85rem; border-left: 3px solid #6c757d;">
+						<strong>{{ msg.content.substring(0, msg.content.indexOf(']') + 1) }}</strong><br>
+						{{ msg.content.substring(msg.content.indexOf(']') + 1).trim() }}
 					</div>
-					<div v-else>
+					<div v-else-if="!msg.is_photo && (!msg.content || !msg.content.includes('/uploads/'))">
 						{{ msg.content }}
 					</div>
 
-					<div v-if="activeEmojiPickerMsgId === msg.id" class="mt-2 p-1 bg-white border rounded shadow-sm d-flex gap-1 justify-content-start">
-						<button 
-							v-for="emoji in availableEmojis" 
-							:key="emoji" 
-							@click="addReaction(msg.id, emoji)"
-							class="btn btn-light btn-sm fs-5 p-1 border-0"
-						>
-							{{ emoji }}
-						</button>
+					<div v-if="msg.is_photo || (msg.content && msg.content.includes('/uploads/'))" class="mt-2 text-center">
+						<img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
 					</div>
 
-					<div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
+					<div class="position-absolute bottom-0 end-0 p-1 me-1" style="font-size: 0.85rem;">
+						<span v-if="msg.sender.id === myUserId" :class="msg.status === 'read' ? 'text-primary' : 'text-muted'" style="font-weight: bold;">
+							{{ msg.status === 'read' ? '✓✓' : '✓' }}
+						</span>
+					</div>
+
+                    <div v-if="activeEmojiPickerMsgId === msg.id" class="mt-2 p-1 bg-white border rounded shadow-sm d-flex gap-1 justify-content-start">
+						<button v-for="emoji in availableEmojis" :key="emoji" @click="addReaction(msg.id, emoji)" class="btn btn-light btn-sm fs-5 p-1 border-0">{{ emoji }}</button>
+					</div>
+
+                    <div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
 						<span 
 							v-for="reaction in msg.reactions" 
-							:key="reaction.id" 
+							:key="reaction.reactionid" 
 							class="badge border text-dark p-1 d-flex align-items-center"
-							:class="reaction.user.username === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
-							:style="reaction.user.username === currentUsername ? 'cursor: pointer;' : ''"
-							@click="reaction.user.username === currentUsername ? removeReaction(msg.id, reaction.id) : null"
-							:title="'Inserita da ' + reaction.user.username + (reaction.user.username === currentUsername ? ' (Clicca per rimuovere)' : '')"
+							:class="reaction.user.name === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
+							:style="reaction.user.name === currentUsername ? 'cursor: pointer;' : ''"
+							@click="reaction.user.name === currentUsername ? removeReaction(msg.id, reaction.reactionid) : null"
+							:title="'Inserita da ' + reaction.user.name"
 						>
 							<span class="fs-6">{{ reaction.emoji }}</span>
 						</span>
@@ -124,10 +96,7 @@
 
 		<div class="input-group mt-auto">
 			<input type="file" ref="fileInput" class="d-none" accept="image/*" @change="onFileSelected" />
-			<button class="btn btn-outline-secondary" @click="triggerFileInput" title="Allega foto">
-				📷
-			</button>
-			
+			<button class="btn btn-outline-secondary" @click="triggerFileInput" title="Allega foto">📷</button>
 			<input 
 				v-model="newMessage" 
 				ref="msgInput"
@@ -137,7 +106,6 @@
 				@keyup.enter="sendMessage"
 				:disabled="selectedFile !== null" 
 			/>
-			
 			<button class="btn btn-primary" @click="sendMessage" :disabled="(!newMessage.trim() && !selectedFile) || sending">
 				{{ sending ? '...' : 'Invia' }}
 			</button>
