@@ -342,12 +342,19 @@ export default {
 				
 				let res = await this.$axios.get("/conversations");
 				
-				let conv = res.data.find(c => c.id === this.conversationId || (c.type === 'direct' && c.id.includes(this.conversationId)));
+				let conv = res.data.find(c => {
+					let idString = String(c.id || c.ID || c.ConversationID || c.convid || "");
+					return idString === this.conversationId || (c.type === 'direct' && idString.includes(this.conversationId));
+				});
 				
 				if (conv) {
-					this.chatInfo = conv;
+					this.chatInfo = {
+						id: conv.id || conv.ID || conv.ConversationID || conv.convid,
+						name: conv.name || conv.Name || "Utente Sconosciuto",
+						type: conv.type || conv.Type || "direct",
+						photo_url: conv.photo_url || conv.PhotoURL || ""
+					};
 				} else {
-					// Fallback temporaneo finché non invia il primo messaggio
 					this.chatInfo = { name: "Nuova Chat Privata", type: 'direct' };
 				}
 			} catch (e) {

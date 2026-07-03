@@ -155,6 +155,7 @@ export default {
 				this.conversations = response.data || [];
 			} catch (e) {
 				this.errormsg = "Errore nel caricamento delle chat.";
+				this.conversations = [];
 			}
 			if (showLoader) this.loading = false;
 		},
