@@ -70,12 +70,12 @@
 					<div v-if="msg.reactions && msg.reactions.length > 0" class="mt-2 d-flex flex-wrap gap-1">
 						<span 
 							v-for="reaction in msg.reactions" 
-							:key="reaction.reactionid" 
+							:key="reaction.id" 
 							class="badge border text-dark p-1 d-flex align-items-center"
-							:class="reaction.user.name === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
-							:style="reaction.user.name === currentUsername ? 'cursor: pointer;' : ''"
-							@click="reaction.user.name === currentUsername ? removeReaction(msg.id, reaction.reactionid) : null"
-							:title="'Inserita da ' + reaction.user.name"
+							:class="reaction.user.username === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
+							:style="reaction.user.username === currentUsername ? 'cursor: pointer;' : ''"
+							@click="reaction.user.username === currentUsername ? removeReaction(msg.id, reaction.id) : null"
+							:title="'Inserita da ' + reaction.user.username"
 						>
 							<span class="fs-6">{{ reaction.emoji }}</span>
 						</span>
@@ -342,19 +342,12 @@ export default {
 				
 				let res = await this.$axios.get("/conversations");
 				
-				let conv = res.data.find(c => {
-					let idString = String(c.id || c.ID || c.ConversationID || c.convid || "");
-					return idString === this.conversationId || (c.type === 'direct' && idString.includes(this.conversationId));
-				});
+				let conv = res.data.find(c => c.id === this.conversationId || (c.type === 'direct' && c.id.includes(this.conversationId)));
 				
 				if (conv) {
-					this.chatInfo = {
-						id: conv.id || conv.ID || conv.ConversationID || conv.convid,
-						name: conv.name || conv.Name || "Utente Sconosciuto",
-						type: conv.type || conv.Type || "direct",
-						photo_url: conv.photo_url || conv.PhotoURL || ""
-					};
+					this.chatInfo = conv;
 				} else {
+					// Fallback temporaneo finché non invia il primo messaggio
 					this.chatInfo = { name: "Nuova Chat Privata", type: 'direct' };
 				}
 			} catch (e) {
@@ -400,25 +393,35 @@ export default {
 			}
 		},
 
-        async addReaction(messageId, emoji) {
-			try {
-				await this.$axios.post(`/messages/${messageId}/comments`, {
-					emoji: emoji
-				});
+        async addReaction(msgId, emoji) {
+			// Trova il messaggio a cui si sta reagendo
+			let msg = this.messages.find(m => m.id === msgId);
+			if (!msg) return;
+
+			// Controlla se è già inserito QUESTA STESSA emoji in questo messaggio
+			let existingReaction = msg.reactions.find(r => r.user.username === this.currentUsername && r.emoji === emoji);
+
+			if (existingReaction) {
+				// Se lo è la rimuove
+				await this.removeReaction(msgId, existingReaction.id);
 				this.activeEmojiPickerMsgId = null; 
-				this.loadMessages(); 
+				return;
+			}
+
+			try {
+				await this.$axios.post(`/messages/${msgId}/comments`, { emoji: emoji });
+				this.activeEmojiPickerMsgId = null; 
+				this.loadMessages(false); // Ricarica in background per far apparire la reazione
 			} catch (e) {
-				console.error("Errore aggiunta reazione:", e);
-				alert("Impossibile aggiungere la reazione.");
+				alert("Errore nell'aggiunta della reazione.");
 			}
 		},
 
-        async removeReaction(messageId, reactionId) {
+        async removeReaction(msgId, reactionId) {
 			try {
-				await this.$axios.delete(`/messages/${messageId}/comments/${reactionId}`);
-				this.loadMessages(); // Ricarichiamo per vederla sparire
+				await this.$axios.delete(`/messages/${msgId}/comments/${reactionId}`);
+				this.loadMessages(false); // Ricarica i messaggi in background
 			} catch (e) {
-				console.error("Errore rimozione reazione:", e);
 				alert("Impossibile rimuovere la reazione.");
 			}
 		},

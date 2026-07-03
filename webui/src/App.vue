@@ -33,8 +33,7 @@ export default {
 			localStorage.removeItem("username");
 			this.token = null;
 			this.username = null;
-            // Rimuoviamo l'autorizzazione di Axios per sicurezza
-            delete this.$axios.defaults.headers.common['Authorization'];
+			delete this.$axios.defaults.headers.common['Authorization'];
 			this.$router.push("/login");
 		}
 	}
