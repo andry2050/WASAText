@@ -143,7 +143,7 @@ export default {
 			selectedMembers: [], 
 			creatingGroup: false,
 			
-			polling: null
+			polling: null 
 		}
 	},
 	methods: {
@@ -221,7 +221,7 @@ export default {
 					members: memberIds
 				});
 
-				const newGroupId = response.data.id;
+				const newGroupId = response.data.id || response.data.GroupID || response.data.id;
 				this.closeGroupModal();
 				this.$router.push('/chat/' + newGroupId);
 
@@ -230,17 +230,19 @@ export default {
 				console.error(e);
 			}
 			this.creatingGroup = false;
-		},
+		}
+	}, 
+
 
 	mounted() {
-			this.loadConversations(true);
-			this.polling = setInterval(() => {
-				this.loadConversations(false);
-			}, 3000);
+		this.loadConversations(true);
+		
+		this.polling = setInterval(() => {
+			this.loadConversations(false);
+		}, 3000);
 	},
 	beforeUnmount() {
 		if (this.polling) clearInterval(this.polling);
-	}
 	}
 }
 </script>
