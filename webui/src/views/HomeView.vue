@@ -151,10 +151,14 @@ export default {
 			if (showLoader) this.loading = true;
 			this.errormsg = null;
 			try {
-				let response = await this.$axios.get("/conversations");
+				const token = localStorage.getItem("token");
+				const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+				let response = await this.$axios.get("/conversations", config);
 				this.conversations = response.data || [];
 			} catch (e) {
 				this.errormsg = "Errore nel caricamento delle chat.";
+				this.conversations = [];
 			}
 			if (showLoader) this.loading = false;
 		},

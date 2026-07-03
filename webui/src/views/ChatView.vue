@@ -26,7 +26,7 @@
 					v-for="msg in messages" 
 					:key="msg.id" 
 					class="mb-3 p-2 border rounded w-75 position-relative pb-4" 
-					:class="msg.sender.id === myUserId ? 'bg-success bg-opacity-10 align-self-end' : 'bg-white align-self-start'"
+					:class="msg.sender.id === myUserId ? 'bg-info bg-opacity-10 align-self-end' : 'bg-white align-self-start'"
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
 						<strong>{{ msg.sender.username }}</strong>
@@ -36,15 +36,17 @@
 							<button @click="openForwardModal(msg.id)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Inoltra">↪️</button>
 							<button @click="toggleEmojiPicker(msg.id)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Reagisci">😀</button>
 
-							<small class="text-muted ms-1">{{ new Date(msg.timestamp).toLocaleString().slice(0, 16) }}</small>
+							<small class="text-muted ms-1">
+								{{ new Date(msg.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) }}
+							</small>
 							
 							<button v-if="msg.sender.username === currentUsername" @click="deleteMessage(msg.id)" class="btn btn-sm text-danger p-0 border-0 bg-transparent ms-2" title="Elimina">🗑️</button>
 						</div>
 					</div>
 					
 					<div v-if="msg.content && isReply(msg.content)">
-						<div class="alert alert-secondary py-1 px-2 mb-1 d-flex flex-column" style="border-left: 4px solid #6c757d; border-radius: 4px;">
-							<strong class="text-primary small">{{ getReplyUsername(msg.content) }}</strong>
+						<div class="alert alert-info py-1 px-2 mb-1 d-flex flex-column" style="border-left: 4px solid #0dcaf0; border-radius: 4px; background-color: #e0f7fa;">
+							<strong class="text-info small">{{ getReplyUsername(msg.content) }}</strong>
 							<span class="text-muted small text-truncate">{{ getReplySnippet(msg.content) }}</span>
 						</div>
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
@@ -71,11 +73,10 @@
 						<span 
 							v-for="reaction in msg.reactions" 
 							:key="reaction.id" 
-							class="badge border text-dark p-1 d-flex align-items-center"
-							:class="reaction.user.username === currentUsername ? 'bg-primary bg-opacity-25' : 'bg-light'"
+							class="badge border text-dark p-1 d-flex align-items-center bg-light"
 							:style="reaction.user.username === currentUsername ? 'cursor: pointer;' : ''"
 							@click="reaction.user.username === currentUsername ? removeReaction(msg.id, reaction.id) : null"
-							:title="'Inserita da ' + reaction.user.username"
+							:title="'Aggiunta da ' + reaction.user.username"
 						>
 							<span class="fs-6">{{ reaction.emoji }}</span>
 						</span>
