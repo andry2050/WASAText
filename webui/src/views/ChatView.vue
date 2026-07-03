@@ -25,10 +25,11 @@
 				<div 
 					v-for="msg in messages" 
 					:key="msg.id" 
-					class="mb-3 p-2 border rounded w-75 position-relative pb-4" 
-					:class="msg.sender.id === myUserId ? 'bg-info bg-opacity-10 align-self-end' : 'bg-white align-self-start'"
+					class="mb-3 p-2 border rounded w-75 position-relative pb-4 shadow-sm" 
+					:style="msg.sender.id === myUserId ? 'background-color: #d1ecf1; border-color: #bee5eb;' : 'background-color: #ffffff;'"
+					:class="msg.sender.id === myUserId ? 'align-self-end' : 'align-self-start'"
 				>
-					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1" :style="msg.sender.id === myUserId ? 'border-bottom-color: rgba(0,0,0,0.1) !important;' : ''">
 						<strong>{{ msg.sender.username }}</strong>
 						
 						<div class="d-flex align-items-center">
@@ -45,8 +46,8 @@
 					</div>
 					
 					<div v-if="msg.content && isReply(msg.content)">
-						<div class="alert alert-info py-1 px-2 mb-1 d-flex flex-column" style="border-left: 4px solid #0dcaf0; border-radius: 4px; background-color: #e0f7fa;">
-							<strong class="text-info small">{{ getReplyUsername(msg.content) }}</strong>
+						<div class="py-1 px-2 mb-1 d-flex flex-column" style="background-color: rgba(255, 255, 255, 0.55); border-left: 4px solid #0056b3; border-radius: 4px;">
+							<strong class="small" style="color: #0056b3;">{{ getReplyUsername(msg.content) }}</strong>
 							<span class="text-muted small text-truncate">{{ getReplySnippet(msg.content) }}</span>
 						</div>
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
@@ -73,7 +74,7 @@
 						<span 
 							v-for="reaction in msg.reactions" 
 							:key="reaction.id" 
-							class="badge border text-dark p-1 d-flex align-items-center bg-light"
+							class="badge border text-dark p-1 d-flex align-items-center bg-light reaction-badge"
 							:style="reaction.user.username === currentUsername ? 'cursor: pointer;' : ''"
 							@click="reaction.user.username === currentUsername ? removeReaction(msg.id, reaction.id) : null"
 							:title="'Aggiunta da ' + reaction.user.username"
@@ -90,9 +91,9 @@
 			<button class="btn btn-sm btn-link text-danger p-0 text-decoration-none" @click="removeFile">❌ Rimuovi</button>
 		</div>
 
-		<div v-if="replyingToMsg" class="alert alert-secondary py-1 px-2 mb-1 d-flex justify-content-between align-items-center" style="border-left: 4px solid #6c757d;">
+		<div v-if="replyingToMsg" class="py-1 px-2 mb-1 d-flex justify-content-between align-items-center" style="background-color: #e3f2fd; border-left: 4px solid #0056b3; border-radius: 4px;">
 			<span class="small text-truncate">
-				<strong class="text-primary">{{ replyingToMsg.sender.username }}</strong><br>
+				<strong style="color: #0056b3;">{{ replyingToMsg.sender.username }}</strong><br>
 				<span class="text-muted">{{ replyingToMsg.is_photo ? '📷 Foto' : replyingToMsg.content }}</span>
 			</span>
 			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>

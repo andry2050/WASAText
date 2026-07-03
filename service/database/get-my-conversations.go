@@ -7,11 +7,16 @@ import (
 )
 
 func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
+	// Il comando NULLIF è fondamentale: impedisce che i nomi siano stringhe vuote (rendendoli invisibili)
 	query := `
 		SELECT
-			c.convid, c.type, c.name, c.photo_url,
-			u.username, u.photo_url,
-			lm.content, lm.is_photo, lm.timestamp
+			c.convid,
+			c.type,
+			COALESCE(NULLIF(c.name, ''), u.username, 'Utente Sconosciuto') AS name,
+			COALESCE(NULLIF(c.photo_url, ''), u.photo_url, '') AS photo_url,
+			lm.content,
+			lm.is_photo,
+			lm.timestamp
 		FROM conversations c
 		INNER JOIN participants p1 ON c.convid = p1.convid AND p1.userid = ?
 		LEFT JOIN participants p2 ON c.convid = p2.convid AND p2.userid != ? AND c.type = 'direct'
@@ -29,7 +34,7 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 
 	rows, err := db.c.Query(query, userID, userID)
 	if err != nil {
-		return nil, fmt.Errorf("errore query: %w", err)
+		return nil, fmt.Errorf("errore query conversazioni: %w", err)
 	}
 	defer rows.Close()
 
@@ -37,27 +42,13 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 
 	for rows.Next() {
 		var c Conversation
-		var cName, cPhoto, oUser, oPhoto, msgContent sql.NullString
+		var msgContent sql.NullString
 		var msgIsPhoto sql.NullBool
 		var msgTimestamp sql.NullTime
 
-		err = rows.Scan(&c.ConversationID, &c.Type, &cName, &cPhoto, &oUser, &oPhoto, &msgContent, &msgIsPhoto, &msgTimestamp)
+		err = rows.Scan(&c.ConversationID, &c.Type, &c.Name, &c.PhotoURL, &msgContent, &msgIsPhoto, &msgTimestamp)
 		if err != nil {
-			return nil, err
-		}
-
-		// 🔴 LOGICA BLINDATA: Assegna il nome utente se è una chat privata!
-		if c.Type == "direct" {
-			c.Name = oUser.String
-			c.PhotoURL = oPhoto.String
-		} else {
-			c.Name = cName.String
-			c.PhotoURL = cPhoto.String
-		}
-
-		// Fallback di sicurezza
-		if c.Name == "" {
-			c.Name = "Utente sconosciuto"
+			return nil, fmt.Errorf("errore lettura riga: %w", err)
 		}
 
 		if msgTimestamp.Valid {
