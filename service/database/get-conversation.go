@@ -43,7 +43,7 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	query := `
 		SELECT 
 			m.msgid, m.senderid, u.username, u.photo_url, 
-			m.content, m.is_photo, m.status, m.timestamp
+			m.content, m.photo_url, m.status, m.timestamp
 		FROM messages m
 		INNER JOIN users u ON m.senderid = u.userid
 		WHERE m.convid = ?
@@ -59,23 +59,30 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	for rows.Next() {
 		var msg Message
 		var msgTime time.Time
-		var photoURL sql.NullString
+		var senderPhotoURL sql.NullString // Per la foto profilo dell'utente
+		var msgPhotoURL sql.NullString    // Per la foto allegata al messaggio (Nuova)
 
+		// Leggiamo i dati (Nota: &msgPhotoURL sostituisce &msg.IsPhoto)
 		err = rows.Scan(
-			&msg.MessageID, &msg.SenderID, &msg.Sender.Username, &photoURL,
-			&msg.Content, &msg.IsPhoto, &msg.Status, &msgTime,
+			&msg.MessageID, &msg.SenderID, &msg.Sender.Username, &senderPhotoURL,
+			&msg.Content, &msgPhotoURL, &msg.Status, &msgTime,
 		)
 		if err != nil {
 			return ConversationDetails{}, fmt.Errorf("errore scan messaggio: %w", err)
 		}
 
+		// Assegniamo i dati letti alla struttura del messaggio
 		msg.Sender.UserID = msg.SenderID
-		if photoURL.Valid {
-			msg.Sender.PhotoURL = photoURL.String
+		if senderPhotoURL.Valid {
+			msg.Sender.PhotoURL = senderPhotoURL.String
 		}
-		msg.Timestamp = msgTime
 
-		// 🔴 FIX: REAZIONI (Punti 7 e 10)
+		// Salviamo il percorso della foto allegata al messaggio
+		if msgPhotoURL.Valid {
+			msg.PhotoURL = msgPhotoURL.String
+		}
+
+		msg.Timestamp = msgTime
 		// Recuperiamo le reazioni associate a questo specifico messaggio
 		reacRows, errReac := db.c.Query(`
 			SELECT r.reactionid, r.emoji, u.userid, u.username 

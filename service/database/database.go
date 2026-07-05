@@ -72,7 +72,7 @@ type Message struct {
 	SenderID       string     `json:"-"`
 	Sender         User       `json:"sender"`
 	Content        string     `json:"content"`
-	IsPhoto        bool       `json:"is_photo"`
+	PhotoURL       string     `json:"photo_url"`
 	Status         string     `json:"status"` // "sent", "received", "read"
 	Timestamp      time.Time  `json:"timestamp"`
 	Reactions      []Reaction `json:"reactions"`
@@ -106,7 +106,7 @@ type AppDatabase interface {
 	GetConversation(conversationID string, userID string) (ConversationDetails, error)
 
 	// Message operations
-	SendMessage(convID string, senderID string, content string, isPhoto bool) (Message, error)
+	SendMessage(convID string, senderID string, content string, photoURL string) (Message, error)
 	ForwardMessage(msgID string, targetConvID string, senderID string) (Message, error)
 	DeleteMessage(msgID string, userID string) error
 	MarkMessagesAsRead(convID string, myID string) error
@@ -181,8 +181,8 @@ func New(db *sql.DB) (AppDatabase, error) {
 		msgid TEXT NOT NULL PRIMARY KEY,
 		convid TEXT NOT NULL,
 		senderid TEXT NOT NULL,
-		content TEXT NOT NULL,
-		is_photo BOOLEAN NOT NULL DEFAULT 0,
+		content TEXT,          
+		photo_url TEXT,        
 		status TEXT NOT NULL,
 		timestamp DATETIME NOT NULL,
 		FOREIGN KEY (convid) REFERENCES conversations(convid) ON DELETE CASCADE,

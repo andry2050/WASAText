@@ -56,12 +56,12 @@
 						</div>
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
 					</div>
-					<div v-else-if="!msg.is_photo && (!msg.content || !msg.content.includes('/uploads/'))" class="text-break">
+					<div v-else-if="msg.content" class="text-break">
 						{{ msg.content }}
 					</div>
 
-					<div v-if="msg.is_photo || (msg.content && msg.content.includes('/uploads/'))" class="mt-2 text-center">
-						<img :src="getPhotoUrl(msg.content)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
+					<div v-if="msg.photo_url" class="mt-2 text-center">
+						<img :src="getPhotoUrl(msg.photo_url)" alt="Foto" class="img-fluid rounded shadow-sm" style="max-height: 250px; object-fit: contain;">
 					</div>
 
 					<div class="position-absolute bottom-0 end-0 p-1 me-1" style="font-size: 0.85rem;">
@@ -276,7 +276,6 @@ export default {
 			const file = event.target.files[0];
 			if (file) {
 				this.selectedFile = file;
-				this.newMessage = "";
 			}
 		},
 		
@@ -312,29 +311,37 @@ export default {
 		},
 
 		async sendMessage() {
-			if (!this.newMessageText && !this.selectedImage) return;
+			if (!this.newMessage.trim() && !this.selectedFile) return;
+
+			this.sending = true;
 
 			try {
-				if (this.selectedImage) {
-					// Se c'è un'immagine usa FormData
-					let formData = new FormData();
-					if (this.newMessageText) {
-						// Se si aspetta "text", cambia la parola qui sotto in "text"!
-						formData.append("content", this.newMessageText);
-					}
-					formData.append("image", this.selectedImage); 
-					
-					await this.$axios.post(`/conversations/${this.chatId}/messages`, formData);
-				} else {
-					// Solo testo usa JSON 
-					await this.$axios.post(`/conversations/${this.chatId}/messages`, {
-						content: this.newMessageText
-					});
+				let finalContent = this.newMessage;
+				if (this.replyingToMsg) {
+					const replyPreview = this.replyingToMsg.is_photo ? '📷 Foto' : this.replyingToMsg.content;
+					finalContent = `[Risposta a ${this.replyingToMsg.sender.username}: ${replyPreview}]\n${finalContent}`;
 				}
 
-				// Pulizia dopo l'invio
-				this.newMessageText = "";
-				this.selectedImage = null;
+				// Creiamo UN SOLO FormData per spedire tutto insieme
+				let formData = new FormData();
+				
+				// Aggiungiamo il testo (se c'è)
+				if (finalContent.trim()) {
+					formData.append("content", finalContent.trim()); 
+				}
+				
+				// Aggiungiamo l'immagine (se c'è)
+				if (this.selectedFile) {
+					formData.append("image", this.selectedFile); 
+				}
+
+				// Facciamo una singola chiamata API
+				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
+
+				// Pulizia UI
+				this.newMessage = "";
+				this.selectedFile = null;
+				this.replyingToMsg = null;
 				if (this.$refs.fileInput) {
 					this.$refs.fileInput.value = ""; 
 				}
@@ -342,12 +349,15 @@ export default {
 				this.loadMessages();
 			} catch (error) {
 				console.error("Errore nell'invio del messaggio:", error);
+				alert("C'è stato un problema durante l'invio del messaggio.");
+			} finally {
+				this.sending = false;
 			}
 		},
 
 		async loadChat() {
 			try {
-				// Segna silenziosamente i messaggi come letti
+				// Segna i messaggi come letti
 				await this.$axios.put(`/conversations/${this.conversationId}/read`).catch(()=>{});
 				
 				let res = await this.$axios.get("/conversations");

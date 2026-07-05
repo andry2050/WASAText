@@ -23,25 +23,22 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 
 	convID := ps.ByName("conversation_id")
 
-	// 3. Analizzia il form multipart (limite 10 MB)
+	// Analizza il form multipart
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		ctx.Logger.WithError(err).Error("Errore nel parsing del form")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	var content string
-	var isPhoto bool
+	// Legge il testo dal FormData di Vue (chiave "content")
+	content := r.FormValue("content")
+	var photoURL string
 
-	// Controlle se è una foto o un testo
-	file, _, errFile := r.FormFile("file")
+	// Controlla se c'è un'immagine allegata (chiave "image")
+	file, _, errFile := r.FormFile("image")
 	if errFile == nil {
-
 		defer file.Close()
-		isPhoto = true
 
-		// Salva l'immagine
 		photoUUID, _ := uuid.NewV4()
 		photoFileName := photoUUID.String() + ".jpg"
 
@@ -51,37 +48,29 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		}
 
 		photoPath := filepath.Join("uploads", photoFileName)
-
 		dst, err := os.Create(photoPath)
 		if err != nil {
-			ctx.Logger.WithError(err).Error("Impossibile salvare la foto del messaggio")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		defer dst.Close()
-
 		if _, err := io.Copy(dst, file); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		content = "/" + photoPath
-	} else {
-		isPhoto = false
-		content = r.FormValue("text")
-
-		// Se non c'è né foto né testo, la richiesta non è valida
-		if content == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		photoURL = "/" + photoPath
 	}
 
-	// Invia al database
-	msg, err := rt.db.SendMessage(convID, senderID, content, isPhoto)
+	// Deve esserci ALMENO il testo O la foto
+	if content == "" && photoURL == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Invia al database passando entrambi
+	msg, err := rt.db.SendMessage(convID, senderID, content, photoURL)
 	if err != nil {
-		ctx.Logger.WithError(err).Error("Errore salvataggio messaggio nel DB")
-		// Potrebbe essere che l'utente stia provando a scrivere in una chat a cui non appartiene
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

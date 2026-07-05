@@ -8,7 +8,8 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content string, isPhoto bool) (Message, error) {
+// Nota: il quarto parametro ora è msgPhotoURL string
+func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content string, msgPhotoURL string) (Message, error) {
 	var realConvID string
 	var isConv bool
 
@@ -56,20 +57,21 @@ func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content
 	timestamp := time.Now().UTC()
 	status := "sent"
 
-	query := `INSERT INTO messages (msgid, convid, senderid, content, is_photo, status, timestamp) 
+	// Usiamo photo_url e passiamo msgPhotoURL
+	query := `INSERT INTO messages (msgid, convid, senderid, content, photo_url, status, timestamp) 
 			  VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err = db.c.Exec(query, msgID, realConvID, senderID, content, isPhoto, status, timestamp)
+	_, err = db.c.Exec(query, msgID, realConvID, senderID, content, msgPhotoURL, status, timestamp)
 	if err != nil {
 		return Message{}, fmt.Errorf("errore inserimento messaggio: %w", err)
 	}
 
-	// 4. Recupero dati utente mittente
+	// 4. Recupero dati utente mittente (chiamiamo la variabile senderPhotoURL per non fare confusione)
 	var sender User
-	var photoURL sql.NullString
-	_ = db.c.QueryRow(`SELECT username, photo_url FROM users WHERE userid = ?`, senderID).Scan(&sender.Username, &photoURL)
+	var senderPhotoURL sql.NullString
+	_ = db.c.QueryRow(`SELECT username, photo_url FROM users WHERE userid = ?`, senderID).Scan(&sender.Username, &senderPhotoURL)
 	sender.UserID = senderID
-	if photoURL.Valid {
-		sender.PhotoURL = photoURL.String
+	if senderPhotoURL.Valid {
+		sender.PhotoURL = senderPhotoURL.String
 	}
 
 	return Message{
@@ -78,7 +80,7 @@ func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content
 		SenderID:       senderID,
 		Sender:         sender,
 		Content:        content,
-		IsPhoto:        isPhoto,
+		PhotoURL:       msgPhotoURL, // Sostituito IsPhoto
 		Status:         status,
 		Timestamp:      timestamp,
 		Reactions:      make([]Reaction, 0),

@@ -18,19 +18,18 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		return Message{}, fmt.Errorf("Utente non fa parte della chat di destinazione")
 	}
 
-	// Recupera il contenuto del messaggio originale e verifica che l'utente faccia parte della
-	// chat da cui proviene il messaggio originale
+	// Recupera il contenuto e l'URL della foto del messaggio originale
 	var content string
-	var isPhoto bool
+	var msgPhotoURL sql.NullString // Usiamo NullString perché potrebbe non esserci una foto
 	var sourceConvID string
 
 	querySource := `
-		SELECT m.content, m.is_photo, m.convid 
+		SELECT m.content, m.photo_url, m.convid 
 		FROM messages m
 		INNER JOIN participants p ON m.convid = p.convid
 		WHERE m.msgid = ? AND p.userid = ?
 	`
-	err = db.c.QueryRow(querySource, originalMsgID, senderID).Scan(&content, &isPhoto, &sourceConvID)
+	err = db.c.QueryRow(querySource, originalMsgID, senderID).Scan(&content, &msgPhotoURL, &sourceConvID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return Message{}, fmt.Errorf("messaggio originale non trovato o accesso negato")
@@ -38,29 +37,41 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		return Message{}, fmt.Errorf("errore recupero messaggio originale: %w", err)
 	}
 
+	photoURLStr := ""
+	if msgPhotoURL.Valid {
+		photoURLStr = msgPhotoURL.String
+	}
+
+	// Mettiamo il tag [Inoltrato] all'inizio del testo
+	if content != "" {
+		content = "[Inoltrato] " + content
+	}
+
 	// Crea il nuovo messaggio
 	newMsgUUID, _ := uuid.NewV4()
 	newMsgID := newMsgUUID.String()
 	timestamp := time.Now().UTC()
-	status := "sent" // Anche l'inoltro parte con lo stato di "inviato"
+	status := "sent"
 
-	insertQuery := `INSERT INTO messages (msgid, convid, senderid, content, is_photo, status, timestamp) 
+	// Inserimento con il nuovo campo photo_url
+	insertQuery := `INSERT INTO messages (msgid, convid, senderid, content, photo_url, status, timestamp) 
 	                VALUES (?, ?, ?, ?, ?, ?, ?)`
-	_, err = db.c.Exec(insertQuery, newMsgID, targetConvID, senderID, content, isPhoto, status, timestamp)
+	_, err = db.c.Exec(insertQuery, newMsgID, targetConvID, senderID, content, photoURLStr, status, timestamp)
 	if err != nil {
 		return Message{}, fmt.Errorf("errore inserimento messaggio inoltrato: %w", err)
 	}
 
 	// Recupera le info dell'utente mittente per la risposta JSON
 	var sender User
-	var photoURL sql.NullString
-	err = db.c.QueryRow(`SELECT username, photo_url FROM users WHERE userid = ?`, senderID).Scan(&sender.Username, &photoURL)
+	var senderPhotoURL sql.NullString
+	err = db.c.QueryRow(`SELECT username, photo_url FROM users WHERE userid = ?`, senderID).Scan(&sender.Username, &senderPhotoURL)
 	if err != nil {
 		return Message{}, fmt.Errorf("errore lettura dati mittente: %w", err)
 	}
+
 	sender.UserID = senderID
-	if photoURL.Valid {
-		sender.PhotoURL = photoURL.String
+	if senderPhotoURL.Valid {
+		sender.PhotoURL = senderPhotoURL.String
 	}
 
 	newMsg := Message{
@@ -69,7 +80,7 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		SenderID:       senderID,
 		Sender:         sender,
 		Content:        content,
-		IsPhoto:        isPhoto,
+		PhotoURL:       photoURLStr, // Al posto di IsPhoto
 		Status:         status,
 		Timestamp:      timestamp,
 		Reactions:      make([]Reaction, 0),
