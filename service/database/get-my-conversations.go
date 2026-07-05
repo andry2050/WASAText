@@ -3,71 +3,66 @@ package database
 import (
 	"database/sql"
 	"fmt"
-	"time"
 )
 
 func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
-	// Il comando NULLIF è fondamentale: impedisce che i nomi siano stringhe vuote (rendendoli invisibili)
+	// Usiamo delle sotto-query COALESCE. Se non ci sono messaggi, restituirà una stringa vuota
+	// anziché nascondere l'intera conversazione! Inoltre rimaniamo agganciati ai partecipanti.
 	query := `
-		SELECT
-			c.convid,
-			c.type,
-			COALESCE(NULLIF(c.name, ''), u.username, 'Utente Sconosciuto') AS name,
-			COALESCE(NULLIF(c.photo_url, ''), u.photo_url, '') AS photo_url,
-			lm.content,
-			lm.is_photo,
-			lm.timestamp
+		SELECT 
+			c.convid, 
+			c.type, 
+			COALESCE(c.name, ''), 
+			COALESCE(c.photo_url, ''),
+			COALESCE((SELECT content FROM messages WHERE convid = c.convid ORDER BY timestamp DESC LIMIT 1), ''),
+			COALESCE((SELECT timestamp FROM messages WHERE convid = c.convid ORDER BY timestamp DESC LIMIT 1), '')
 		FROM conversations c
-		INNER JOIN participants p1 ON c.convid = p1.convid AND p1.userid = ?
-		LEFT JOIN participants p2 ON c.convid = p2.convid AND p2.userid != ? AND c.type = 'direct'
-		LEFT JOIN users u ON p2.userid = u.userid
-		LEFT JOIN (
-			SELECT m1.convid, m1.content, m1.is_photo, m1.timestamp
-			FROM messages m1
-			INNER JOIN (
-				SELECT convid, MAX(timestamp) as max_ts FROM messages GROUP BY convid
-			) m2 ON m1.convid = m2.convid AND m1.timestamp = m2.max_ts
-			GROUP BY m1.convid
-		) lm ON c.convid = lm.convid
-		ORDER BY lm.timestamp DESC
+		INNER JOIN participants p ON c.convid = p.convid
+		WHERE p.userid = ?
 	`
-
-	rows, err := db.c.Query(query, userID, userID)
+	rows, err := db.c.Query(query, userID)
 	if err != nil {
-		return nil, fmt.Errorf("errore query conversazioni: %w", err)
+		return nil, fmt.Errorf("errore recupero conversazioni dal db: %w", err)
 	}
 	defer rows.Close()
 
 	var conversations []Conversation
-
 	for rows.Next() {
 		var c Conversation
-		var msgContent sql.NullString
-		var msgIsPhoto sql.NullBool
-		var msgTimestamp sql.NullTime
-
-		err = rows.Scan(&c.ConversationID, &c.Type, &c.Name, &c.PhotoURL, &msgContent, &msgIsPhoto, &msgTimestamp)
+		err = rows.Scan(&c.ConversationID, &c.Type, &c.Name, &c.PhotoURL, &c.LastMessagePreview, &c.LastMessageTimestamp)
 		if err != nil {
-			return nil, fmt.Errorf("errore lettura riga: %w", err)
+			return nil, fmt.Errorf("errore scan conversazione: %w", err)
 		}
 
-		if msgTimestamp.Valid {
-			c.LastMessageTimestamp = msgTimestamp.Time.Format(time.RFC3339)
-			if msgIsPhoto.Valid && msgIsPhoto.Bool {
-				c.LastMessagePreview = "📷 Foto"
-			} else if msgContent.Valid {
-				c.LastMessagePreview = msgContent.String
+		// ✨ MAGIA PER LE CHAT DIRETTE:
+		// Se è una chat diretta, il campo 'name' nel DB è vuoto.
+		// Dobbiamo estrarre il nome e la foto dell'ALTRA persona presente nella chat!
+		if c.Type == "direct" {
+			var otherUsername, otherPhoto sql.NullString
+			errOther := db.c.QueryRow(`
+				SELECT u.username, u.photo_url 
+				FROM participants p
+				INNER JOIN users u ON p.userid = u.userid
+				WHERE p.convid = ? AND p.userid != ?
+			`, c.ConversationID, userID).Scan(&otherUsername, &otherPhoto)
+
+			if errOther == nil {
+				if otherUsername.Valid {
+					c.Name = otherUsername.String
+				}
+				if otherPhoto.Valid {
+					c.PhotoURL = otherPhoto.String
+				}
 			}
-		} else {
-			c.LastMessageTimestamp = ""
-			c.LastMessagePreview = "Nessun messaggio"
 		}
 
 		conversations = append(conversations, c)
 	}
 
+	// Evitiamo di restituire 'null' al frontend se l'array è vuoto, restituiamo invece []
 	if conversations == nil {
 		conversations = make([]Conversation, 0)
 	}
+
 	return conversations, nil
 }
