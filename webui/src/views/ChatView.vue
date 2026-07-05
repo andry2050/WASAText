@@ -113,7 +113,6 @@
 				class="form-control" 
 				placeholder="Scrivi un messaggio..." 
 				@keyup.enter="sendMessage"
-				:disabled="selectedFile !== null" 
 			/>
 			<button class="btn btn-primary" @click="sendMessage" :disabled="(!newMessage.trim() && !selectedFile) || sending">
 				{{ sending ? '...' : 'Invia' }}
@@ -313,33 +312,36 @@ export default {
 		},
 
 		async sendMessage() {
-			// Evita di inviare messaggi totalmente vuoti
 			if (!this.newMessageText && !this.selectedImage) return;
 
-			let formData = new FormData();
-
-			// 1. Aggiungi il testo (se l'utente lo ha scritto)
-			if (this.newMessageText) {
-				formData.append("content", this.newMessageText);
-			}
-
-			// 2. Aggiungi l'immagine (se l'utente ne ha caricata una)
-			if (this.selectedImage) {
-				formData.append("image", this.selectedImage);
-			}
-
 			try {
-				// Invia il pacco al backend
-				await this.$axios.post(`/conversations/${this.chatId}/messages`, formData);
-				
-				// Pulisci i campi dopo l'invio
+				if (this.selectedImage) {
+					// Se c'è un'immagine usa FormData
+					let formData = new FormData();
+					if (this.newMessageText) {
+						// Se si aspetta "text", cambia la parola qui sotto in "text"!
+						formData.append("content", this.newMessageText);
+					}
+					formData.append("image", this.selectedImage); 
+					
+					await this.$axios.post(`/conversations/${this.chatId}/messages`, formData);
+				} else {
+					// Solo testo usa JSON 
+					await this.$axios.post(`/conversations/${this.chatId}/messages`, {
+						content: this.newMessageText
+					});
+				}
+
+				// Pulizia dopo l'invio
 				this.newMessageText = "";
 				this.selectedImage = null;
-				
-				// Ricarica la chat per vedere il nuovo messaggio
+				if (this.$refs.fileInput) {
+					this.$refs.fileInput.value = ""; 
+				}
+
 				this.loadMessages();
 			} catch (error) {
-				console.error("Errore nell'invio del messaggio multimediale:", error);
+				console.error("Errore nell'invio del messaggio:", error);
 			}
 		},
 
