@@ -14,3 +14,6 @@ app.component("ErrorMsg", ErrorMsg);
 app.component("LoadingSpinner", LoadingSpinner);
 app.use(router)
 app.mount('#app')
+
+// Prende automaticamente l'indirizzo (es. localhost o 192.168.1.5) e ci attacca la porta 3000 del backend Go
+axios.defaults.baseURL = 'http://' + window.location.hostname + ':3000';
