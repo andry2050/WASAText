@@ -235,15 +235,15 @@ export default {
 			this.creatingGroup = false;
 		},
 
-		mounted() {
-				this.loadConversations(true);
-				this.polling = setInterval(() => {
-					this.loadConversations(false);
-				}, 3000);
-		},
-		beforeUnmount() {
-			if (this.polling) clearInterval(this.polling);
-		}
+	mounted() {
+			this.loadConversations(true);
+			this.polling = setInterval(() => {
+				this.loadConversations(false);
+			}, 3000);
+	},
+	beforeUnmount() {
+		if (this.polling) clearInterval(this.polling);
 	}
+}
 }
 </script>

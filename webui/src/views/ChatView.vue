@@ -41,6 +41,10 @@
 								{{ new Date(msg.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) }}
 							</small>
 							
+							<div v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="text-muted small mb-1" style="font-style: italic;">
+								🔄 Messaggio Inoltrato
+							</div>
+
 							<button v-if="msg.sender.username === currentUsername" @click="deleteMessage(msg.id)" class="btn btn-sm text-danger p-0 border-0 bg-transparent ms-2" title="Elimina">🗑️</button>
 						</div>
 					</div>
@@ -309,32 +313,34 @@ export default {
 		},
 
 		async sendMessage() {
-			let text = this.newMessage.trim();
-			if (!text && !this.selectedFile) return;
+			// Evita di inviare messaggi totalmente vuoti
+			if (!this.newMessageText && !this.selectedImage) return;
 
-			if (this.replyingToMsg && text) {
-				let snippet = this.replyingToMsg.is_photo ? "📷 Foto" : this.replyingToMsg.content;
-				if (this.isReply(snippet)) snippet = this.getActualMessage(snippet);
-				if (snippet.length > 50) snippet = snippet.substring(0, 50) + "...";
-				text = `[Risposta a ${this.replyingToMsg.sender.username}: ${snippet}]\n${text}`;
+			let formData = new FormData();
+
+			// 1. Aggiungi il testo (se l'utente lo ha scritto)
+			if (this.newMessageText) {
+				formData.append("content", this.newMessageText);
 			}
 
-			this.sending = true;
+			// 2. Aggiungi l'immagine (se l'utente ne ha caricata una)
+			if (this.selectedImage) {
+				formData.append("image", this.selectedImage);
+			}
+
 			try {
-				const formData = new FormData();
-				if (this.selectedFile) formData.append("file", this.selectedFile);
-				else formData.append("text", text);
-
-				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
+				// Invia il pacco al backend
+				await this.$axios.post(`/conversations/${this.chatId}/messages`, formData);
 				
-				this.newMessage = ""; 
-				this.removeFile();
-				this.replyingToMsg = null;
-				this.loadMessages(); 
-			} catch (e) {
-				alert("Impossibile inviare il messaggio.");
+				// Pulisci i campi dopo l'invio
+				this.newMessageText = "";
+				this.selectedImage = null;
+				
+				// Ricarica la chat per vedere il nuovo messaggio
+				this.loadMessages();
+			} catch (error) {
+				console.error("Errore nell'invio del messaggio multimediale:", error);
 			}
-			this.sending = false;
 		},
 
 		async loadChat() {
@@ -396,26 +402,34 @@ export default {
 		},
 
         async addReaction(msgId, emoji) {
-			// Trova il messaggio a cui si sta reagendo
+			// 1. Trova il messaggio a cui si sta reagendo
 			let msg = this.messages.find(m => m.id === msgId);
 			if (!msg) return;
 
-			// Controlla se è già inserito QUESTA STESSA emoji in questo messaggio
-			let existingReaction = msg.reactions.find(r => r.user.username === this.currentUsername && r.emoji === emoji);
+			// 2. Controlla se è già stata inserita una reazione al messaggio
+			let existingReaction = msg.reactions ? msg.reactions.find(r => r.user.username === this.currentUsername) : null;
 
+			// 3. Se hai già una reazione...
 			if (existingReaction) {
-				// Se lo è la rimuove
-				await this.removeReaction(msgId, existingReaction.id);
-				this.activeEmojiPickerMsgId = null; 
-				return;
+				if (existingReaction.emoji === emoji) {
+					// Nel caso in cui viene cliccata la stessa reazione, viene rimossa
+					await this.removeReaction(msgId, existingReaction.id);
+					this.activeEmojiPickerMsgId = null; 
+					return;
+				} else {
+					// Nel caso in cui ne viene cliccata un'altra, viene sostituita con quella nuova
+					await this.removeReaction(msgId, existingReaction.id);
+				}
 			}
 
+			// 4. Invia la nuova reazione al backend
 			try {
 				await this.$axios.post(`/messages/${msgId}/comments`, { emoji: emoji });
 				this.activeEmojiPickerMsgId = null; 
-				this.loadMessages(false); // Ricarica in background per far apparire la reazione
+				this.loadMessages(false); // Ricarica in background per mostrare l'emoji
 			} catch (e) {
-				alert("Errore nell'aggiunta della reazione.");
+				// Fallback: se il backend ha già bloccato l'utente, lo avvisiamo
+				alert("Hai già inserito una reazione o c'è stato un errore.");
 			}
 		},
 
