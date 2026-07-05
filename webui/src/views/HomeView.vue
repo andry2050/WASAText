@@ -233,7 +233,8 @@ export default {
 				console.error(e);
 			}
 			this.creatingGroup = false;
-		},
+		}
+	},
 
 	mounted() {
 			this.loadConversations(true);
@@ -245,5 +246,5 @@ export default {
 		if (this.polling) clearInterval(this.polling);
 	}
 }
-}
+
 </script>
