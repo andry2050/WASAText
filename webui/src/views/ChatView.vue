@@ -30,7 +30,13 @@
 					:class="msg.sender.id === myUserId ? 'align-self-end' : 'align-self-start'"
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1" :style="msg.sender.id === myUserId ? 'border-bottom-color: rgba(0,0,0,0.1) !important;' : ''">
-						<strong>{{ msg.sender.username }}</strong>
+						
+						<div class="d-flex align-items-center gap-2">
+							<strong>{{ msg.sender.username }}</strong>
+							<span v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="badge bg-secondary" style="font-size: 0.65rem;">
+								🔄 Inoltrato
+							</span>
+						</div>
 						
 						<div class="d-flex align-items-center">
 							<button @click="replyTo(msg)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Rispondi">↩️</button>
@@ -40,10 +46,6 @@
 							<small class="text-muted ms-1">
 								{{ new Date(msg.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) }}
 							</small>
-							
-							<div v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="text-muted small mb-1" style="font-style: italic;">
-								🔄 Messaggio Inoltrato
-							</div>
 
 							<button v-if="msg.sender.username === currentUsername" @click="deleteMessage(msg.id)" class="btn btn-sm text-danger p-0 border-0 bg-transparent ms-2" title="Elimina">🗑️</button>
 						</div>
@@ -56,8 +58,9 @@
 						</div>
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
 					</div>
-					<div v-else-if="msg.content" class="text-break">
-						{{ msg.content }}
+					
+					<div v-else-if="!msg.photo_url && (!msg.content || !msg.content.includes('/uploads/'))" class="text-break">
+						{{ msg.content.replace('[Inoltrato] ', '') }}
 					</div>
 
 					<div v-if="msg.photo_url" class="mt-2 text-center">
@@ -98,7 +101,9 @@
 		<div v-if="replyingToMsg" class="py-1 px-2 mb-1 d-flex justify-content-between align-items-center" style="background-color: #e3f2fd; border-left: 4px solid #0056b3; border-radius: 4px;">
 			<span class="small text-truncate">
 				<strong style="color: #0056b3;">{{ replyingToMsg.sender.username }}</strong><br>
-				<span class="text-muted">{{ replyingToMsg.is_photo ? '📷 Foto' : replyingToMsg.content }}</span>
+				<span class="text-muted">
+					{{ (replyingToMsg.photo_url || (replyingToMsg.content && replyingToMsg.content.includes('/uploads/'))) ? '📷 Foto' : replyingToMsg.content.replace('[Inoltrato] ', '') }}
+				</span>
 			</span>
 			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>
 		</div>
@@ -326,28 +331,30 @@ export default {
 
 			try {
 				let finalContent = this.newMessage;
+				
 				if (this.replyingToMsg) {
-					const replyPreview = this.replyingToMsg.is_photo ? '📷 Foto' : this.replyingToMsg.content;
+					// Verifica se il messaggio originale era una foto
+					const isPhoto = this.replyingToMsg.photo_url || (this.replyingToMsg.content && this.replyingToMsg.content.includes('/uploads/'));
+					
+					// Crea l'anteprima: l'icona 'Foto' oppure il testo ripulito
+					const replyPreview = isPhoto ? '📷 Foto' : this.replyingToMsg.content.replace('[Inoltrato] ', '');
+					
 					finalContent = `[Risposta a ${this.replyingToMsg.sender.username}: ${replyPreview}]\n${finalContent}`;
 				}
 
-				// Creiamo UN SOLO FormData per spedire tutto insieme
+				// 2. Prepara i dati da inviare usando FormData (richiesto dal backend)
 				let formData = new FormData();
-				
-				// Aggiungiamo il testo (se c'è)
 				if (finalContent.trim()) {
-					formData.append("content", finalContent.trim()); 
+					formData.append("content", finalContent.trim());
 				}
-				
-				// Aggiungiamo l'immagine (se c'è)
 				if (this.selectedFile) {
 					formData.append("image", this.selectedFile); 
 				}
 
-				// Facciamo una singola chiamata API
+				// 3. Facciamo la chiamata API
 				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
 
-				// Pulizia UI
+				// 4. Pulizia interfaccia dopo l'invio riuscito
 				this.newMessage = "";
 				this.selectedFile = null;
 				this.replyingToMsg = null;
@@ -358,7 +365,7 @@ export default {
 				this.loadMessages();
 			} catch (error) {
 				console.error("Errore nell'invio del messaggio:", error);
-				alert("C'è stato un problema durante l'invio del messaggio.");
+				alert("Impossibile inviare il messaggio.");
 			} finally {
 				this.sending = false;
 			}
