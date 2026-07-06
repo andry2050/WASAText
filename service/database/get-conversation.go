@@ -16,7 +16,6 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	if isConv {
 		realConvID = targetOrConvID
 	} else {
-		// Calcoliamo l'ID univoco della chat diretta
 		if userID < targetOrConvID {
 			realConvID = userID + "_" + targetOrConvID
 		} else {
@@ -35,8 +34,7 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 		}, nil
 	}
 
-	// 🔴 FIX: SPUNTE DI LETTURA (Punti 3 e 9)
-	// Quando apro la chat, tutti i messaggi inviati dall'altra persona passano a "read" (Letti)
+	// Quando un utente apre la chat, tutti i messaggi inviati dall'altra persona passano a read
 	_, _ = db.c.Exec(`UPDATE messages SET status = 'read' WHERE convid = ? AND senderid != ? AND status != 'read'`, realConvID, userID)
 
 	// Prende i messaggi
@@ -59,10 +57,9 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 	for rows.Next() {
 		var msg Message
 		var msgTime time.Time
-		var senderPhotoURL sql.NullString // Per la foto profilo dell'utente
-		var msgPhotoURL sql.NullString    // Per la foto allegata al messaggio (Nuova)
+		var senderPhotoURL sql.NullString
+		var msgPhotoURL sql.NullString
 
-		// Leggiamo i dati (Nota: &msgPhotoURL sostituisce &msg.IsPhoto)
 		err = rows.Scan(
 			&msg.MessageID, &msg.SenderID, &msg.Sender.Username, &senderPhotoURL,
 			&msg.Content, &msgPhotoURL, &msg.Status, &msgTime,
@@ -71,19 +68,19 @@ func (db *appdbimpl) GetConversation(targetOrConvID string, userID string) (Conv
 			return ConversationDetails{}, fmt.Errorf("errore scan messaggio: %w", err)
 		}
 
-		// Assegniamo i dati letti alla struttura del messaggio
+		// Assegna i dati letti alla struttura del messaggio
 		msg.Sender.UserID = msg.SenderID
 		if senderPhotoURL.Valid {
 			msg.Sender.PhotoURL = senderPhotoURL.String
 		}
 
-		// Salviamo il percorso della foto allegata al messaggio
+		// Salva il percorso della foto allegata al messaggio
 		if msgPhotoURL.Valid {
 			msg.PhotoURL = msgPhotoURL.String
 		}
 
 		msg.Timestamp = msgTime
-		// Recuperiamo le reazioni associate a questo specifico messaggio
+		// Recupera le reazioni associate a questo specifico messaggio
 		reacRows, errReac := db.c.Query(`
 			SELECT r.reactionid, r.emoji, u.userid, u.username 
 			FROM reactions r 

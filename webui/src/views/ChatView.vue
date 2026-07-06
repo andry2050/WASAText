@@ -546,11 +546,7 @@ export default {
 	display: flex;
 	flex-direction: column;
 }
-/* Disabilita l'input di testo visivamente se c'è un file selezionato */
-input:disabled {
-	background-color: #e9ecef;
-	cursor: not-allowed;
-}
+
 .modal-overlay {
 	position: fixed;
 	top: 0;

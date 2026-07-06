@@ -86,7 +86,6 @@ export default {
 			} catch (e) { console.error("Errore caricamento profilo", e); }
 		},
 		async changeUsername() {
-			// ... (Mantieni il tuo codice originale per changeUsername) ...
 			this.errorMsg = ""; this.successMsg = "";
 			const cleanName = this.newUsername.trim();
 			if (cleanName.length < 3 || cleanName.length > 16) return;
@@ -116,7 +115,7 @@ export default {
 				this.successMsg = "Foto profilo aggiornata con successo!";
 				this.selectedFile = null; this.selectedPhoto = false;
 				this.$refs.photoInput.value = ""; 
-				this.loadMyProfile(); // Ricarica la foto appena caricata!
+				this.loadMyProfile(); // Ricarica la foto appena caricata
 			} catch (e) {
 				this.errorMsg = "Errore durante il caricamento della foto.";
 			}

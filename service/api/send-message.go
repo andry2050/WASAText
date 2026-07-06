@@ -30,11 +30,11 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		return
 	}
 
-	// Legge il testo dal FormData di Vue (chiave "content")
+	// Legge il testo dal FormData di Vue
 	content := r.FormValue("content")
 	var photoURL string
 
-	// Controlla se c'è un'immagine allegata (chiave "image")
+	// Controlla se c'è un'immagine allegata
 	file, _, errFile := r.FormFile("image")
 	if errFile == nil {
 		defer file.Close()
@@ -62,7 +62,7 @@ func (rt *_router) sendMessage(w http.ResponseWriter, r *http.Request, ps httpro
 		photoURL = "/" + photoPath
 	}
 
-	// Deve esserci ALMENO il testo O la foto
+	// Deve esserci ALMENO il testo o la foto
 	if content == "" && photoURL == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return

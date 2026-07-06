@@ -42,7 +42,6 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		photoURLStr = msgPhotoURL.String
 	}
 
-	// Mettiamo il tag [Inoltrato] all'inizio del testo
 	if content != "" {
 		content = "[Inoltrato] " + content
 	}
@@ -80,7 +79,7 @@ func (db *appdbimpl) ForwardMessage(originalMsgID string, targetConvID string, s
 		SenderID:       senderID,
 		Sender:         sender,
 		Content:        content,
-		PhotoURL:       photoURLStr, // Al posto di IsPhoto
+		PhotoURL:       photoURLStr,
 		Status:         status,
 		Timestamp:      timestamp,
 		Reactions:      make([]Reaction, 0),

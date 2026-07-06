@@ -138,7 +138,12 @@ func New(db *sql.DB) (AppDatabase, error) {
 
 	var err error
 
-	_, errPramga := db.Exec(`PRAGMA foreign_keys = ON`)
+	_, errPramga := db.Exec(`
+		PRAGMA foreign_keys = ON;
+		PRAGMA journal_mode = WAL;
+		PRAGMA synchronous = NORMAL;
+		PRAGMA busy_timeout = 5000;
+	`)
 	if errPramga != nil {
 		return nil, fmt.Errorf("error setting pragmas: %w", errPramga)
 	}

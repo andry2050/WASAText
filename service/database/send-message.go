@@ -13,7 +13,7 @@ func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content
 	var realConvID string
 	var isConv bool
 
-	// 1. Controlliamo se targetOrConvID è una chat già avviata
+	// 1. Controlla se targetOrConvID è una chat già avviata
 	_ = db.c.QueryRow(`SELECT EXISTS(SELECT 1 FROM conversations WHERE convid = ?)`, targetOrConvID).Scan(&isConv)
 
 	if isConv {
@@ -65,7 +65,7 @@ func (db *appdbimpl) SendMessage(targetOrConvID string, senderID string, content
 		return Message{}, fmt.Errorf("errore inserimento messaggio: %w", err)
 	}
 
-	// 4. Recupero dati utente mittente (chiamiamo la variabile senderPhotoURL per non fare confusione)
+	// 4. Recupero dati utente mittente
 	var sender User
 	var senderPhotoURL sql.NullString
 	_ = db.c.QueryRow(`SELECT username, photo_url FROM users WHERE userid = ?`, senderID).Scan(&sender.Username, &senderPhotoURL)

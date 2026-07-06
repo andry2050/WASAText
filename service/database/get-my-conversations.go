@@ -6,8 +6,7 @@ import (
 )
 
 func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
-	// Usiamo delle sotto-query COALESCE. Se non ci sono messaggi, restituirà una stringa vuota
-	// anziché nascondere l'intera conversazione! Inoltre rimaniamo agganciati ai partecipanti.
+	// Se non ci sono messaggi, restituirà una stringa vuota anziché nascondere l'intera conversazione. Inoltre rimangono agganciati i partecipanti.
 	query := `
 		SELECT 
 			c.convid, 
@@ -34,9 +33,8 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 			return nil, fmt.Errorf("errore scan conversazione: %w", err)
 		}
 
-		// ✨ MAGIA PER LE CHAT DIRETTE:
 		// Se è una chat diretta, il campo 'name' nel DB è vuoto.
-		// Dobbiamo estrarre il nome e la foto dell'ALTRA persona presente nella chat!
+		// Estrae il nome e la foto dell'altra persona presente nella chat
 		if c.Type == "direct" {
 			var otherUsername, otherPhoto sql.NullString
 			errOther := db.c.QueryRow(`
@@ -59,7 +57,7 @@ func (db *appdbimpl) GetMyConversations(userID string) ([]Conversation, error) {
 		conversations = append(conversations, c)
 	}
 
-	// Evitiamo di restituire 'null' al frontend se l'array è vuoto, restituiamo invece []
+	// Se l'arrai è vuoto restituisce []
 	if conversations == nil {
 		conversations = make([]Conversation, 0)
 	}

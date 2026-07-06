@@ -47,7 +47,7 @@ export default {
 					name: cleanName,
 				});
 
-				// 3. Il backend ci risponde con l'identificatore (l'ID utente)
+				// 3. Il backend risponde con l'identificatore (l'ID utente)
 				const userID = response.data.identifier;
 
 				// 4. Salva l'ID e il nome utente nella memoria del browser
