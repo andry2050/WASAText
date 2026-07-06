@@ -171,9 +171,16 @@
                 <div class="mb-4 border-top pt-3">
                     <label class="form-label fw-bold small">Aggiungi Membro</label>
                     <div class="input-group mb-2">
-                        <input v-model="searchUsername" type="text" class="form-control form-control-sm" placeholder="Username esatto...">
-                        <button class="btn btn-sm btn-outline-primary" @click="addMemberToGroup" :disabled="!searchUsername">Aggiungi</button>
+                        <input v-model="searchUsername" type="text" class="form-control form-control-sm" placeholder="Cerca username..." @keyup.enter="searchUsersForGroup">
+                        <button class="btn btn-sm btn-outline-primary" @click="searchUsersForGroup" :disabled="!searchUsername">Cerca</button>
                     </div>
+                    
+                    <ul v-if="searchResults && searchResults.length > 0" class="list-group mb-2" style="max-height: 150px; overflow-y: auto;">
+                        <li v-for="user in searchResults" :key="user.id" class="list-group-item d-flex justify-content-between align-items-center p-2">
+                            {{ user.username }}
+                            <button class="btn btn-sm btn-success" @click="addMemberToGroup(user)">+ Aggiungi</button>
+                        </li>
+                    </ul>
                 </div>
 
                 <div class="border-top pt-3 text-center">
@@ -223,6 +230,7 @@ export default {
 			newGroupName: "",
 			selectedGroupPhoto: null,
 			searchUsername: "",
+			searchResults: [],
 			
 			polling: null,       
 			replyingToMsg: null  
@@ -303,6 +311,7 @@ export default {
 			this.showInfoModal = true;
 			this.newGroupName = "";
 			this.searchUsername = "";
+			this.searchResults = [];
 			this.selectedGroupPhoto = null;
 		},
         
@@ -482,26 +491,29 @@ export default {
 			}
 		},
 
-        async addMemberToGroup() {
+        async searchUsersForGroup() {
+			if (!this.searchUsername.trim()) return;
 			try {
-				// Siccome l'API richiede l'ID utente, prima cerchiamo l'utente per nome
-				let res = await this.$axios.get(`/users`, { params: { name: this.searchUsername.trim() } });
-				
-				if (!res.data || res.data.length === 0) {
-					alert("Utente non trovato!");
-					return;
-				}
-				
-				// Prendiamo l'ID del primo utente trovato con quel nome
-				const targetUserId = res.data[0].id; 
+				// Ora passiamo "username" in modo corretto, proprio come fa la Home!
+				let response = await this.$axios.get(`/users`, { params: { username: this.searchUsername.trim() } });
+				this.searchResults = response.data || [];
+			} catch (e) {
+				console.error("Errore ricerca utenti:", e);
+				this.searchResults = [];
+			}
+		},
 
-				// Aggiungiamolo al gruppo
-				await this.$axios.post(`/groups/${this.conversationId}/members`, { user_id: targetUserId });
-				alert(`Utente ${this.searchUsername} aggiunto al gruppo!`);
-				this.searchUsername = "";
+		async addMemberToGroup(user) {
+			try {
+				// Usa direttamente l'ID dell'utente su cui l'utente ha cliccato "Aggiungi"
+				await this.$axios.post(`/groups/${this.conversationId}/members`, { user_id: user.id });
+				alert(`Utente ${user.username} aggiunto al gruppo!`);
+				
+				// Rimuove l'utente appena aggiunto dalla lista dei risultati della ricerca
+				this.searchResults = this.searchResults.filter(u => u.id !== user.id);
 				
 			} catch (e) {
-				alert("Errore durante l'aggiunta. Assicurati di essere in un gruppo e non in una chat singola.");
+				alert("Errore durante l'aggiunta. Forse l'utente fa già parte del gruppo o non hai i permessi.");
 			}
 		},
 
@@ -509,7 +521,7 @@ export default {
 			if (!confirm("Sei sicuro di voler abbandonare questo gruppo?")) return;
 			
 			try {
-				// Leggiamo il nostro ID dal localStorage (che avevi salvato al login)
+				// Legge il nostro ID dal localStorage salvato dal login
 				const myUserId = localStorage.getItem("token");
 				
 				await this.$axios.delete(`/groups/${this.conversationId}/members/${myUserId}`);
@@ -517,7 +529,7 @@ export default {
 				alert("Hai abbandonato il gruppo.");
 				this.closeInfoModal();
 				
-				// Ti riporto alla Home perché non sei più nel gruppo!
+				// Riporta l'utente alla home perché non è più nel gruppo 
 				this.$router.push("/");
 				
 			} catch (e) {
