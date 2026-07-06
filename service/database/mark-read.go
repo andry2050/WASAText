@@ -10,7 +10,7 @@ func (db *appdbimpl) MarkMessagesAsRead(targetOrConvID string, userID string) er
 	if isConv {
 		realConvID = targetOrConvID
 	} else {
-		// Se non esiste, calcola l'ID univoco alfabetico (es. Marco_Matteo)
+		// Se non esiste, calcola l'ID univoco alfabetico
 		if userID < targetOrConvID {
 			realConvID = userID + "_" + targetOrConvID
 		} else {

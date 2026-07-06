@@ -16,8 +16,7 @@
 		</div>
 
 		<div class="messages-area flex-grow-1 overflow-auto my-3 p-2 bg-light border rounded">
-			<div v-if="loading" class="text-center text-muted mt-3">Caricamento messaggi...</div>
-			<div v-else-if="messages.length === 0" class="text-center text-muted mt-3">
+			<div v-if="messages.length === 0" class="text-center text-muted mt-3">
 				Nessun messaggio. Scrivi qualcosa o invia una foto per iniziare
 			</div>
 			
