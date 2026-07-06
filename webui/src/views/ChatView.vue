@@ -46,7 +46,7 @@
 					</div>
 					
 					<div v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="text-muted mb-2 mt-1" style="font-size: 0.8rem; font-style: italic;">
-						<span class="fs-6" style="vertical-align: middle;">🔄</span> Messaggio Inoltrato
+						<span class="fs-6" style="vertical-align: middle;">🔄</span> Inoltrato
 					</div>
 					
 					<div v-if="msg.content && isReply(msg.content)">
@@ -243,7 +243,7 @@ export default {
 		async loadMessages(showLoader = true) {
 			if (showLoader) this.loading = true;
 			try {
-				// Segna i messaggi silensiosamente come letti
+				// Segna i messaggi come letti
 				await this.$axios.put(`/conversations/${this.conversationId}/read`).catch(()=>{});
 				
 				let response = await this.$axios.get(`/conversations/${this.conversationId}`);
@@ -260,7 +260,7 @@ export default {
 		
 		replyTo(msg) {
 			this.replyingToMsg = msg;
-			this.$refs.msgInput.focus(); // Porta il focus sulla tastiera
+			this.$refs.msgInput.focus();
 		},
 
 		isReply(text) {
@@ -448,7 +448,7 @@ export default {
 			// 2. Controlla se è già stata inserita una reazione al messaggio
 			let existingReaction = msg.reactions ? msg.reactions.find(r => r.user.username === this.currentUsername) : null;
 
-			// 3. Se hai già una reazione...
+			// 3. Se c'è già una reazione
 			if (existingReaction) {
 				if (existingReaction.emoji === emoji) {
 					// Nel caso in cui viene cliccata la stessa reazione, viene rimossa
@@ -467,7 +467,7 @@ export default {
 				this.activeEmojiPickerMsgId = null; 
 				this.loadMessages(false); // Ricarica in background per mostrare l'emoji
 			} catch (e) {
-				// Fallback: se il backend ha già bloccato l'utente, lo avvisiamo
+				// l'utente viene avvisato se il backend l'ha già bloccato 
 				alert("Hai già inserito una reazione o c'è stato un errore.");
 			}
 		},
@@ -512,7 +512,6 @@ export default {
         async searchUsersForGroup() {
 			if (!this.searchUsername.trim()) return;
 			try {
-				// Ora passiamo "username" in modo corretto, proprio come fa la Home!
 				let response = await this.$axios.get(`/users`, { params: { username: this.searchUsername.trim() } });
 				this.searchResults = response.data || [];
 			} catch (e) {
@@ -539,7 +538,7 @@ export default {
 			if (!confirm("Sei sicuro di voler abbandonare questo gruppo?")) return;
 			
 			try {
-				// Legge il nostro ID dal localStorage salvato dal login
+				// Legge l'id dell'utente dal localStorage salvato dal login
 				const myUserId = localStorage.getItem("token");
 				
 				await this.$axios.delete(`/groups/${this.conversationId}/members/${myUserId}`);
