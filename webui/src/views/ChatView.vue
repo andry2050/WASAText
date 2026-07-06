@@ -102,7 +102,7 @@
 			<span class="small text-truncate">
 				<strong style="color: #0056b3;">{{ replyingToMsg.sender.username }}</strong><br>
 				<span class="text-muted">
-					{{ (replyingToMsg.photo_url || (replyingToMsg.content && replyingToMsg.content.includes('/uploads/'))) ? '📷 Foto' : replyingToMsg.content.replace('[Inoltrato] ', '') }}
+					{{ (replyingToMsg.photo_url || replyingToMsg.is_photo) ? '📷 Foto' : (replyingToMsg.content ? replyingToMsg.content.replace('[Inoltrato] ', '') : 'Messaggio') }}
 				</span>
 			</span>
 			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>
@@ -332,17 +332,24 @@ export default {
 			try {
 				let finalContent = this.newMessage;
 				
+				// 1. Aggiunge lo snippet se stiamo rispondendo
 				if (this.replyingToMsg) {
-					// Verifica se il messaggio originale era una foto
-					const isPhoto = this.replyingToMsg.photo_url || (this.replyingToMsg.content && this.replyingToMsg.content.includes('/uploads/'));
+					// Controllo per capire se il messaggio originale era una foto
+					const isPhoto = (this.replyingToMsg.photo_url && this.replyingToMsg.photo_url.trim() !== "") || this.replyingToMsg.is_photo;
 					
-					// Crea l'anteprima: l'icona 'Foto' oppure il testo ripulito
-					const replyPreview = isPhoto ? '📷 Foto' : this.replyingToMsg.content.replace('[Inoltrato] ', '');
+					// Crea l'anteprima: l'icona 'Foto' oppure il testo
+					let replyPreview = "Messaggio";
+					if (isPhoto) {
+						replyPreview = "📷 Foto";
+					} else if (this.replyingToMsg.content) {
+						replyPreview = this.replyingToMsg.content.replace('[Inoltrato] ', '');
+					}
 					
+					// Compone la stringa finale
 					finalContent = `[Risposta a ${this.replyingToMsg.sender.username}: ${replyPreview}]\n${finalContent}`;
 				}
 
-				// 2. Prepara i dati da inviare usando FormData (richiesto dal backend)
+				// 2. Prepara i dati da inviare (Sempre in formato FormData per il tuo Backend)
 				let formData = new FormData();
 				if (finalContent.trim()) {
 					formData.append("content", finalContent.trim());
@@ -351,10 +358,10 @@ export default {
 					formData.append("image", this.selectedFile); 
 				}
 
-				// 3. Facciamo la chiamata API
+				// 3. Esegue la chiamata al database
 				await this.$axios.post(`/conversations/${this.conversationId}/messages`, formData);
 
-				// 4. Pulizia interfaccia dopo l'invio riuscito
+				// 4. Pulizia UI dopo l'invio
 				this.newMessage = "";
 				this.selectedFile = null;
 				this.replyingToMsg = null;
