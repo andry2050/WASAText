@@ -31,12 +31,7 @@
 				>
 					<div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1" :style="msg.sender.id === myUserId ? 'border-bottom-color: rgba(0,0,0,0.1) !important;' : ''">
 						
-						<div class="d-flex align-items-center gap-2">
-							<strong>{{ msg.sender.username }}</strong>
-							<span v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="badge bg-secondary" style="font-size: 0.65rem;">
-								🔄 Inoltrato
-							</span>
-						</div>
+						<strong>{{ msg.sender.username }}</strong>
 						
 						<div class="d-flex align-items-center">
 							<button @click="replyTo(msg)" class="btn btn-sm p-0 border-0 bg-transparent me-2" title="Rispondi">↩️</button>
@@ -49,6 +44,10 @@
 
 							<button v-if="msg.sender.username === currentUsername" @click="deleteMessage(msg.id)" class="btn btn-sm text-danger p-0 border-0 bg-transparent ms-2" title="Elimina">🗑️</button>
 						</div>
+					</div>
+					
+					<div v-if="msg.forwarded || msg.is_forwarded || (msg.content && msg.content.startsWith('[Inoltrato]'))" class="text-muted mb-2 mt-1" style="font-size: 0.8rem; font-style: italic;">
+						<span class="fs-6" style="vertical-align: middle;">🔄</span> Messaggio Inoltrato
 					</div>
 					
 					<div v-if="msg.content && isReply(msg.content)">
