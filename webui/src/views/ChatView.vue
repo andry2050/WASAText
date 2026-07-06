@@ -59,7 +59,7 @@
 						<div class="text-break mt-1">{{ getActualMessage(msg.content) }}</div>
 					</div>
 					
-					<div v-else-if="!msg.photo_url && (!msg.content || !msg.content.includes('/uploads/'))" class="text-break">
+					<div v-else-if="msg.content" class="text-break">
 						{{ msg.content.replace('[Inoltrato] ', '') }}
 					</div>
 
