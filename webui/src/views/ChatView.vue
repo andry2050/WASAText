@@ -100,7 +100,7 @@
 			<span class="small text-truncate">
 				<strong style="color: #0056b3;">{{ replyingToMsg.sender.username }}</strong><br>
 				<span class="text-muted">
-					{{ (replyingToMsg.photo_url || replyingToMsg.is_photo) ? '📷 Foto' : (replyingToMsg.content ? replyingToMsg.content.replace('[Inoltrato] ', '') : 'Messaggio') }}
+					{{ (replyingToMsg.photo_url || replyingToMsg.is_photo) ? (replyingToMsg.content ? '🖼️ ' + replyingToMsg.content.replace('[Inoltrato] ', '') : '🖼️ Foto') : (replyingToMsg.content ? replyingToMsg.content.replace('[Inoltrato] ', '') : 'Messaggio') }}
 				</span>
 			</span>
 			<button class="btn-close btn-sm" style="font-size: 0.5rem;" @click="replyingToMsg = null"></button>
@@ -330,24 +330,30 @@ export default {
 			try {
 				let finalContent = this.newMessage;
 				
-				// 1. Aggiunge lo snippet se stiamo rispondendo
+				// 1. Aggiunge lo snippet se l'utente risponde
 				if (this.replyingToMsg) {
-					// Controllo per capire se il messaggio originale era una foto
+					// Controlla se il messaggio ha una foto
 					const isPhoto = (this.replyingToMsg.photo_url && this.replyingToMsg.photo_url.trim() !== "") || this.replyingToMsg.is_photo;
+					// Estrae il testo pulito se presente
+					const originalText = this.replyingToMsg.content ? this.replyingToMsg.content.replace('[Inoltrato] ', '').trim() : "";
 					
-					// Crea l'anteprima: l'icona 'Foto' oppure il testo
+					// Creazione dinamica dell'anteprima
 					let replyPreview = "Messaggio";
 					if (isPhoto) {
-						replyPreview = "📷 Foto";
-					} else if (this.replyingToMsg.content) {
-						replyPreview = this.replyingToMsg.content.replace('[Inoltrato] ', '');
+						if (originalText !== "") {
+							replyPreview = "🖼️ " + originalText; 
+						} else {
+							replyPreview = "🖼️ Foto"; 
+						}
+					} else if (originalText !== "") {
+						replyPreview = originalText;
 					}
 					
-					// Compone la stringa finale
+					// Compone la stringa finale per il database
 					finalContent = `[Risposta a ${this.replyingToMsg.sender.username}: ${replyPreview}]\n${finalContent}`;
 				}
 
-				// 2. Prepara i dati da inviare (Sempre in formato FormData per il tuo Backend)
+				// 2. Prepara i dati da inviare in formato FormData
 				let formData = new FormData();
 				if (finalContent.trim()) {
 					formData.append("content", finalContent.trim());
