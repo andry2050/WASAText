@@ -16,4 +16,4 @@ app.use(router)
 app.mount('#app')
 
 // Usa l'indirizzo IP attuale del dispositivo a cui sei connesso
-axios.defaults.baseURL = `http://${window.location.hostname}:3000`;
+axios.defaults.baseURL = __API_URL__;

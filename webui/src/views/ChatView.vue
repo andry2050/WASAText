@@ -297,9 +297,11 @@ export default {
 		
 		getPhotoUrl(path) {
 			if (!path) return "";
-			// Costruisce sempre l'URL corretto puntando al backend
-			const baseUrl = this.$axios.defaults.baseURL || "http://localhost:3000";
-			return path.startsWith("http") ? path : baseUrl + (path.startsWith("/") ? "" : "/") + path;
+			if (path.startsWith("http")) return path;
+			
+			// Usa la baseURL dinamica di Axios (se presente) altrimenti usa il percorso relativo.
+			const baseUrl = this.$axios.defaults.baseURL || "";
+			return baseUrl + (path.startsWith("/") ? "" : "/") + path;
 		},
 
         toggleEmojiPicker(messageId) {
